@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from tech_tracker.app_youtube import fetch_youtube_videos_from_config
+from tech_tracker.app.youtube import fetch_youtube_videos_from_config
 from tech_tracker.downloader import FeedDownloader
 from tech_tracker.sources.youtube.rss import build_youtube_feed_url
 

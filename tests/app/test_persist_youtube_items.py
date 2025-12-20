@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from tech_tracker.app_persist import fetch_and_persist_youtube_items
+from tech_tracker.app.persist import fetch_and_persist_youtube_items
 from tech_tracker.item_store import JsonItemStore
 from tech_tracker.sources.youtube.rss import build_youtube_feed_url
 
