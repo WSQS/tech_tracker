@@ -2,15 +2,17 @@
 
 from typing import Any, Dict, List
 
+from tech_tracker.item import Item
 
-def youtube_videos_to_items(videos_by_source_url: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+
+def youtube_videos_to_items(videos_by_source_url: Dict[str, List[Dict[str, Any]]]) -> List[Item]:
     """Convert YouTube videos to generic item structure.
     
     Args:
         videos_by_source_url: Dictionary mapping source URLs to video lists.
         
     Returns:
-        List of item dictionaries with the following structure:
+        List of Item objects with the following structure:
         - item_id: str (video_id from YouTube)
         - source_type: str (always "youtube")
         - source_url: str (the source URL from the input dict)
@@ -32,15 +34,15 @@ def youtube_videos_to_items(videos_by_source_url: Dict[str, List[Dict[str, Any]]
             if not all([video_id, title, link, published]):
                 continue
             
-            # Create item with mapped fields
-            item = {
-                "item_id": video_id,
-                "source_type": "youtube",
-                "source_url": source_url,
-                "title": title,
-                "link": link,
-                "published": published,
-            }
+            # Create Item with mapped fields
+            item = Item(
+                item_id=video_id,
+                source_type="youtube",
+                source_url=source_url,
+                title=title,
+                link=link,
+                published=published,
+            )
             
             items.append(item)
     

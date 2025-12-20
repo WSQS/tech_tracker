@@ -131,14 +131,14 @@ title = "Test Channel"
         item = items[0]
         
         # Verify item fields
-        assert item["item_id"] == "abc123def456"  # video_id -> item_id
-        assert item["source_type"] == "youtube"
-        assert item["source_url"] == "https://www.youtube.com/channel/UC1234567890"
-        assert item["title"] == "Test Video Title"
-        assert item["link"] == "https://www.youtube.com/watch?v=abc123def456"
+        assert item.item_id == "abc123def456"  # video_id -> item_id
+        assert item.source_type == "youtube"
+        assert item.source_url == "https://www.youtube.com/channel/UC1234567890"
+        assert item.title == "Test Video Title"
+        assert item.link == "https://www.youtube.com/watch?v=abc123def456"
         
         # Verify published is datetime and timezone-aware UTC
-        published = item["published"]
+        published = item.published
         assert isinstance(published, datetime)
         assert published.tzinfo == timezone.utc
         assert published == datetime(2023, 12, 20, 9, 0, 0, tzinfo=timezone.utc)

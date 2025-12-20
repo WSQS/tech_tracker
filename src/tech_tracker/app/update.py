@@ -8,13 +8,14 @@ from tech_tracker.downloader import FeedDownloader
 from tech_tracker.item_diff import diff_new_items
 from tech_tracker.item_store import JsonItemStore
 from tech_tracker.sources.youtube.to_items import youtube_videos_to_items
+from tech_tracker.item import Item
 
 
 def fetch_youtube_new_items(
     config_path: Union[str, Path],
     downloader: FeedDownloader,
     store: JsonItemStore,
-) -> List[Dict[str, Any]]:
+) -> List[Item]:
     """Fetch YouTube videos and return only new items compared to store.
     
     This function:
@@ -31,7 +32,7 @@ def fetch_youtube_new_items(
         store: JsonItemStore instance for persistence.
         
     Returns:
-        List of new item dictionaries that weren't in the store before.
+        List of new Item objects that weren't in the store before.
     """
     # 1) Load existing items from store
     old_items = store.load_all()

@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import pytest
 
 from tech_tracker.item_diff import diff_new_items
+from tech_tracker.item import Item
 
 
 def test_diff_new_items_old_empty_returns_all_new() -> None:

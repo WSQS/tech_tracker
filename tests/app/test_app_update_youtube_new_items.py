@@ -132,13 +132,13 @@ title = "Test Channel"
     
     # Verify returns 2 new items
     assert len(new_items) == 2
-    new_item_ids = {item["item_id"] for item in new_items}
+    new_item_ids = {item.item_id for item in new_items}
     assert new_item_ids == {"abc123def456", "xyz789uvw012"}
     
     # Verify store now contains 2 items
     stored_items = store.load_all()
     assert len(stored_items) == 2
-    stored_item_ids = {item["item_id"] for item in stored_items}
+    stored_item_ids = {item.item_id for item in stored_items}
     assert stored_item_ids == {"abc123def456", "xyz789uvw012"}
 
 
@@ -178,7 +178,7 @@ title = "Test Channel"
     # Verify store still contains 2 items
     stored_items = store.load_all()
     assert len(stored_items) == 2
-    stored_item_ids = {item["item_id"] for item in stored_items}
+    stored_item_ids = {item.item_id for item in stored_items}
     assert stored_item_ids == {"abc123def456", "xyz789uvw012"}
 
 
@@ -212,16 +212,16 @@ title = "Test Channel"
     
     # Verify returns only the new item
     assert len(new_items_second) == 1
-    assert new_items_second[0]["item_id"] == "new789xyz456"
-    assert new_items_second[0]["title"] == "Third Video Title"
+    assert new_items_second[0].item_id == "new789xyz456"
+    assert new_items_second[0].title == "Third Video Title"
     
     # Verify store now contains 3 items total
     stored_items = store.load_all()
     assert len(stored_items) == 3
-    stored_item_ids = {item["item_id"] for item in stored_items}
+    stored_item_ids = {item.item_id for item in stored_items}
     assert stored_item_ids == {"abc123def456", "xyz789uvw012", "new789xyz456"}
     
     # Verify the new item is the latest (sorted by published time)
     latest_item = stored_items[0]  # First item should be latest
-    assert latest_item["item_id"] == "new789xyz456"
-    assert latest_item["published"] == datetime(2023, 12, 20, 11, 0, 0, tzinfo=timezone.utc)
+    assert latest_item.item_id == "new789xyz456"
+    assert latest_item.published == datetime(2023, 12, 20, 11, 0, 0, tzinfo=timezone.utc)
