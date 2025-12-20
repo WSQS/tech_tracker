@@ -117,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
         "--store",
         type=str,
         required=False,
-        help="Path to item store JSON file (reserved for future use)"
+        help="Path to item store JSON file. When provided, fetched YouTube videos are converted to items and saved."
     )
     
     # Parse arguments
