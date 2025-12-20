@@ -102,6 +102,12 @@ def main(argv: list[str] | None = None) -> int:
         required=True,
         help="Path to TOML configuration file"
     )
+    youtube_parser.add_argument(
+        "--store",
+        type=str,
+        required=False,
+        help="Path to item store JSON file (reserved for future use)"
+    )
     
     # Parse arguments
     args = parser.parse_args(argv)
