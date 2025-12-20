@@ -2,7 +2,7 @@
 
 import pytest
 
-from tech_tracker.youtube_rss import build_youtube_feed_url
+from tech_tracker.sources.youtube.rss import build_youtube_feed_url
 
 
 def test_build_url_normal() -> None:

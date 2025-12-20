@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 from tech_tracker.app_youtube import fetch_youtube_videos_from_config
 from tech_tracker.downloader import UrllibFeedDownloader
 from tech_tracker.item_store import JsonItemStore
-from tech_tracker.youtube_to_items import youtube_videos_to_items
+from tech_tracker.sources.youtube.to_items import youtube_videos_to_items
 
 
 def serialize_videos_for_json(videos_by_url: Dict[str, List[Dict[str, Any]]]) -> Dict[str, List[Dict[str, Any]]]:

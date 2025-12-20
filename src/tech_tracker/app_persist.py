@@ -6,7 +6,7 @@ from typing import Union
 from tech_tracker.app_youtube import fetch_youtube_videos_from_config
 from tech_tracker.downloader import FeedDownloader
 from tech_tracker.item_store import JsonItemStore
-from tech_tracker.youtube_to_items import youtube_videos_to_items
+from tech_tracker.sources.youtube.to_items import youtube_videos_to_items
 
 
 def fetch_and_persist_youtube_items(

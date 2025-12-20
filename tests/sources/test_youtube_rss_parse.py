@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from tech_tracker.youtube_rss import parse_youtube_feed
+from tech_tracker.sources.youtube.rss import parse_youtube_feed
 
 
 # Sample YouTube RSS feed XML with 2 entries

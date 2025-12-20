@@ -9,7 +9,7 @@ import pytest
 
 from tech_tracker.cli import main
 from tech_tracker.item_store import JsonItemStore
-from tech_tracker.youtube_rss import build_youtube_feed_url
+from tech_tracker.sources.youtube.rss import build_youtube_feed_url
 
 
 # Sample YouTube RSS feed XML

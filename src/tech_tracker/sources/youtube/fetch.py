@@ -3,7 +3,7 @@
 from typing import Any, Dict, List
 
 from tech_tracker.downloader import FeedDownloader
-from tech_tracker.youtube_rss import build_youtube_feed_url, parse_youtube_feed
+from tech_tracker.sources.youtube.rss import build_youtube_feed_url, parse_youtube_feed
 
 
 def fetch_youtube_videos(

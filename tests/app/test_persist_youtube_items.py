@@ -8,7 +8,7 @@ import pytest
 
 from tech_tracker.app_persist import fetch_and_persist_youtube_items
 from tech_tracker.item_store import JsonItemStore
-from tech_tracker.youtube_rss import build_youtube_feed_url
+from tech_tracker.sources.youtube.rss import build_youtube_feed_url
 
 
 # Sample YouTube RSS feed XML with 2 entries (reused from test_youtube_rss_parse.py)

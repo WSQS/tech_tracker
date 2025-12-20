@@ -2,7 +2,7 @@
 
 import pytest
 
-from tech_tracker.youtube_channel import extract_channel_id_from_youtube_url
+from tech_tracker.sources.youtube.channel import extract_channel_id_from_youtube_url
 
 
 def test_extract_channel_id_normal_cases() -> None:

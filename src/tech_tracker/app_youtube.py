@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Union
 
 from tech_tracker.config import load_sources_from_toml
 from tech_tracker.downloader import FeedDownloader
-from tech_tracker.youtube_channel import extract_channel_id_from_youtube_url
-from tech_tracker.youtube_fetch import fetch_youtube_videos
+from tech_tracker.sources.youtube.channel import extract_channel_id_from_youtube_url
+from tech_tracker.sources.youtube.fetch import fetch_youtube_videos
 
 
 def fetch_youtube_videos_from_config(
