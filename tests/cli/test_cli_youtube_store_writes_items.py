@@ -194,17 +194,12 @@ title = "Test Channel"
         assert len(output_json1[youtube_url]) == 1
         assert output_json1[youtube_url][0]["item_id"] == "abc123def456"
         
-        # Second run - should output empty list (no new items)
+        # Second run - should output empty dict (no new items)
         result2 = main(["youtube", "--config", str(config_file), "--store", str(store_path)])
         assert result2 == 0
         
         captured2 = capsys.readouterr()
         output_json2 = json.loads(captured2.out)
         
-        # When no new items, output should be empty dict or contain empty lists
-        if output_json2:  # If not empty dict, should contain empty list for this URL
-            assert youtube_url in output_json2
-            assert len(output_json2[youtube_url]) == 0  # No new items
-        else:
-            # Empty dict is also acceptable when no items at all
-            pass
+        # When no new items, output must be strictly empty dict {}
+        assert output_json2 == {}
