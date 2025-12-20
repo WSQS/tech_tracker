@@ -8,6 +8,8 @@ from typing import Any, Dict, List
 
 from tech_tracker.app_youtube import fetch_youtube_videos_from_config
 from tech_tracker.downloader import UrllibFeedDownloader
+from tech_tracker.item_store import JsonItemStore
+from tech_tracker.youtube_to_items import youtube_videos_to_items
 
 
 def serialize_videos_for_json(videos_by_url: Dict[str, List[Dict[str, Any]]]) -> Dict[str, List[Dict[str, Any]]]:
@@ -62,7 +64,16 @@ def handle_youtube_command(args: argparse.Namespace) -> int:
         downloader = UrllibFeedDownloader()
         videos_by_url = fetch_youtube_videos_from_config(args.config, downloader)
         
-        # Serialize for JSON output
+        # If --store is provided, save items to store
+        if args.store:
+            # Convert videos to items
+            items = youtube_videos_to_items(videos_by_url)
+            
+            # Save to store
+            store = JsonItemStore(args.store)
+            store.save_many(items)
+        
+        # Serialize for JSON output (still output videos, not items)
         output_data = serialize_videos_for_json(videos_by_url)
         
         # Output JSON to stdout
