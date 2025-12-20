@@ -2,6 +2,10 @@
 
 __version__ = "0.1.0"
 
+from .item import Item
+
+__all__ = ["Item"]
+
 
 def ping() -> str:
     """Simple ping function for testing purposes.
