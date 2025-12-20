@@ -106,3 +106,25 @@ def parse_youtube_feed(xml: str) -> List[Dict[str, Any]]:
             continue
     
     return videos
+
+
+def build_youtube_feed_url(channel_id: str) -> str:
+    """Build YouTube RSS feed URL from channel ID.
+    
+    Args:
+        channel_id: YouTube channel ID string.
+        
+    Returns:
+        YouTube RSS feed URL for the specified channel.
+        
+    Raises:
+        ValueError: If channel_id is empty after stripping whitespace.
+    """
+    if not isinstance(channel_id, str):
+        raise ValueError("channel_id must be a string")
+    
+    stripped_id = channel_id.strip()
+    if not stripped_id:
+        raise ValueError("channel_id cannot be empty")
+    
+    return f"https://www.youtube.com/feeds/videos.xml?channel_id={stripped_id}"
