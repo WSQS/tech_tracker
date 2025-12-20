@@ -25,6 +25,9 @@ classifiers = [
 Homepage = "https://github.com/yourusername/tech-tracker"
 Repository = "https://github.com/yourusername/tech-tracker"
 
+[project.scripts]
+tech-tracker = "tech_tracker.cli:main"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
