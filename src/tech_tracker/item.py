@@ -14,7 +14,7 @@ class Item:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert Item to dictionary, with published as Z-format string."""
-        # Convert to UTC first, then format
+        # Convert to UTC first, then format with microsecond precision
         published_utc = self.published.astimezone(timezone.utc)
         return {
             "item_id": self.item_id,
@@ -22,7 +22,7 @@ class Item:
             "source_url": self.source_url,
             "title": self.title,
             "link": self.link,
-            "published": published_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "published": published_utc.isoformat().replace("+00:00", "Z"),
         }
 
     @classmethod
@@ -30,18 +30,28 @@ class Item:
         """Create Item from dictionary.
         
         Supports:
-        - d["published"] as "....Z" string (required)
+        - d["published"] as "....Z" string (with or without microseconds)
         - d["published"] as timezone-aware datetime (optional)
         """
+        # Check required fields
+        required_fields = ["item_id", "source_type", "source_url", "title", "link", "published"]
+        for field in required_fields:
+            if field not in d:
+                raise KeyError(f"Missing required field: '{field}'")
+        
         published_raw = d["published"]
         
         if isinstance(published_raw, str):
-            # Parse "....Z" string to UTC datetime using strptime
+            # Parse "....Z" string to UTC datetime
             if not published_raw.endswith("Z"):
                 raise ValueError(f"Published datetime must end with 'Z': {published_raw}")
             
+            # Remove Z and replace with +00:00 for fromisoformat
+            published_str = published_raw[:-1] + "+00:00"
             try:
-                published = datetime.strptime(published_raw, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+                published = datetime.fromisoformat(published_str)
+                # Ensure UTC
+                published = published.astimezone(timezone.utc)
             except ValueError as e:
                 raise ValueError(f"Invalid datetime format: {published_raw}") from e
         elif isinstance(published_raw, datetime):

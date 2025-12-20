@@ -5,43 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
-
-def _dt_to_str(dt: datetime) -> str:
-    """Convert datetime to ISO string with 'Z' suffix for UTC.
-    
-    Args:
-        dt: Datetime object (should be timezone-aware).
-        
-    Returns:
-        ISO string with 'Z' suffix.
-    """
-    # Ensure UTC and format with 'Z' suffix
-    utc_time = dt.astimezone(timezone.utc)
-    return utc_time.isoformat().replace("+00:00", "Z")
-
-
-def _str_to_dt(s: str) -> datetime:
-    """Convert ISO string to datetime (timezone-aware UTC).
-    
-    Args:
-        s: ISO string with 'Z' suffix or '+00:00'.
-        
-    Returns:
-        Timezone-aware datetime in UTC.
-    """
-    # Handle 'Z' suffix
-    if s.endswith('Z'):
-        s = s[:-1] + '+00:00'
-    
-    dt = datetime.fromisoformat(s)
-    
-    # Ensure timezone-aware and in UTC
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    else:
-        dt = dt.astimezone(timezone.utc)
-    
-    return dt
+from .item import Item
 
 
 class JsonItemStore:
@@ -84,23 +48,52 @@ class JsonItemStore:
         if not isinstance(items, list):
             raise ValueError(f"Invalid structure in {self.path}: 'items' must be a list")
         
-        # Convert string timestamps back to datetime objects
+        # Convert dicts to Item objects, then back to dicts for external interface
         result = []
         for item in items:
             if not isinstance(item, dict):
                 raise ValueError(f"Invalid item in {self.path}: item must be a dictionary")
             
-            # Make a copy to avoid modifying original
-            item_copy = dict(item)
+            # Check if item has all required fields for Item.from_dict
+            required_fields = ["item_id", "source_type", "source_url", "title", "link", "published"]
+            has_all_fields = all(field in item for field in required_fields)
             
-            # Convert published timestamp back to datetime
-            if "published" in item_copy and item_copy["published"]:
+            if has_all_fields:
                 try:
-                    item_copy["published"] = _str_to_dt(item_copy["published"])
+                    # Convert dict to Item using Item.from_dict
+                    item_obj = Item.from_dict(item)
+                    # Convert back to dict but keep published as datetime for external interface compatibility
+                    item_dict = item_obj.to_dict()
+                    # Convert published string back to datetime to maintain external interface
+                    if "published" in item_dict:
+                        item_dict["published"] = item_obj.published
+                    result.append(item_dict)
                 except ValueError as e:
-                    raise ValueError(f"Invalid published timestamp in {self.path}: {e}") from e
-            
-            result.append(item_copy)
+                    # Preserve original error message for timestamp validation
+                    if "Invalid datetime format" in str(e) or "Published datetime must end with 'Z'" in str(e):
+                        raise ValueError(f"Invalid published timestamp in {self.path}: {e}") from e
+                    else:
+                        raise ValueError(f"Invalid item data in {self.path}: {e}") from e
+            else:
+                # For items without all required fields, we can't use Item dataclass
+                # This maintains compatibility with existing tests that use partial items
+                # Make a copy to avoid modifying original
+                item_copy = dict(item)
+                
+                # Convert published timestamp back to datetime if present
+                if "published" in item_copy and item_copy["published"]:
+                    try:
+                        # Use the same parsing logic as Item.from_dict for published field
+                        published_raw = item_copy["published"]
+                        if isinstance(published_raw, str):
+                            if not published_raw.endswith("Z"):
+                                raise ValueError(f"Published datetime must end with 'Z': {published_raw}")
+                            published_str = published_raw[:-1] + "+00:00"
+                            item_copy["published"] = datetime.fromisoformat(published_str).astimezone(timezone.utc)
+                    except ValueError as e:
+                        raise ValueError(f"Invalid published timestamp in {self.path}: {e}") from e
+                
+                result.append(item_copy)
         
         return result
     
@@ -119,7 +112,7 @@ class JsonItemStore:
             for item in self.load_all():
                 item_id = item.get("item_id")
                 if item_id:
-                    existing_items[item_id] = item
+                    existing_items[item_id] = Item.from_dict(item)
         except ValueError:
             # If we can't load existing items, start fresh
             existing_items = {}
@@ -130,60 +123,26 @@ class JsonItemStore:
             if not item_id:
                 continue  # Skip items without item_id
             
-            # Make a copy to avoid modifying original
-            item_copy = dict(item)
-            
-            # Convert datetime to string for JSON serialization
-            if "published" in item_copy and item_copy["published"]:
-                if isinstance(item_copy["published"], datetime):
-                    item_copy["published"] = _dt_to_str(item_copy["published"])
-                elif isinstance(item_copy["published"], str):
-                    # Already a string, ensure it's in the correct format
-                    try:
-                        # Parse and reformat to ensure consistency
-                        dt = _str_to_dt(item_copy["published"])
-                        item_copy["published"] = _dt_to_str(dt)
-                    except ValueError:
-                        # If parsing fails, leave as is
-                        pass
-            
-            existing_items[item_id] = item_copy
+            # Convert dict to Item using Item.from_dict
+            try:
+                item_obj = Item.from_dict(item)
+                existing_items[item_id] = item_obj
+            except (ValueError, TypeError) as e:
+                # Skip invalid items but continue processing others
+                continue
         
-        # For items with same published time, we need to sort by item_id ascending
-        # Group items by published time
-        from collections import defaultdict
-        time_groups = defaultdict(list)
-        for item in existing_items.values():
-            # Parse published time for grouping
-            if isinstance(item["published"], str):
-                time_key = _str_to_dt(item["published"])
-            else:
-                time_key = item["published"]
-            time_groups[time_key].append(item)
+        # Sort items by published descending, then item_id ascending
+        # Use Item objects for sorting to leverage their datetime fields
+        sorted_items = sorted(
+            existing_items.values(),
+            key=lambda x: (-x.published.timestamp(), x.item_id)
+        )
         
-        # Sort within each time group by item_id
-        sorted_items = []
-        for time_key in sorted(time_groups.keys(), reverse=True):
-            group_items = sorted(time_groups[time_key], key=lambda x: x["item_id"])
-            sorted_items.extend(group_items)
-        
-        # Convert datetime to string for JSON serialization
-        for item in sorted_items:
-            if "published" in item and item["published"]:
-                if isinstance(item["published"], datetime):
-                    item["published"] = _dt_to_str(item["published"])
-                elif isinstance(item["published"], str):
-                    # Already a string, ensure it's in the correct format
-                    try:
-                        # Parse and reformat to ensure consistency
-                        dt = _str_to_dt(item["published"])
-                        item["published"] = _dt_to_str(dt)
-                    except ValueError:
-                        # If parsing fails, leave as is
-                        pass
+        # Convert Item objects back to dicts for JSON serialization
+        dict_items = [item.to_dict() for item in sorted_items]
         
         # Save to file
-        data = {"items": sorted_items}
+        data = {"items": dict_items}
         
         # Ensure parent directory exists
         self.path.parent.mkdir(parents=True, exist_ok=True)
