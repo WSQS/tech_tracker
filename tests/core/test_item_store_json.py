@@ -3,10 +3,24 @@
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Dict
 
 import pytest
 
 from tech_tracker.item_store import JsonItemStore
+from tech_tracker.item import Item
+
+
+def dict_to_item(item_dict: Dict[str, Any]) -> Item:
+    """Convert dictionary to Item object."""
+    return Item(
+        item_id=item_dict["item_id"],
+        source_type=item_dict["source_type"],
+        source_url=item_dict["source_url"],
+        title=item_dict["title"],
+        link=item_dict["link"],
+        published=item_dict["published"],
+    )
 
 
 def test_load_all_nonexistent_file(tmp_path: Path) -> None:
@@ -45,8 +59,9 @@ def test_save_and_load_items(tmp_path: Path) -> None:
         },
     ]
     
-    # Save items
-    store.save_many(items)
+    # Convert dicts to Item objects and save
+    item_objects = [dict_to_item(item) for item in items]
+    store.save_many(item_objects)
     
     # Load items
     loaded_items = store.load_all()
@@ -91,7 +106,8 @@ def test_save_and_load_with_existing_items(tmp_path: Path) -> None:
     ]
     
     # Save initial items
-    store.save_many(initial_items)
+    initial_item_objects = [dict_to_item(item) for item in initial_items]
+    store.save_many(initial_item_objects)
     
     # Create new items (one new, one existing)
     new_items = [
@@ -114,7 +130,8 @@ def test_save_and_load_with_existing_items(tmp_path: Path) -> None:
     ]
     
     # Save new items
-    store.save_many(new_items)
+    new_item_objects = [dict_to_item(item) for item in new_items]
+    store.save_many(new_item_objects)
     
     # Load all items
     loaded_items = store.load_all()
@@ -145,6 +162,7 @@ def test_item_sorting(tmp_path: Path) -> None:
     
     # Create items with different publish times
     now = datetime.now(timezone.utc)
+
     items = [
         {
             "item_id": "item1",
@@ -173,7 +191,10 @@ def test_item_sorting(tmp_path: Path) -> None:
     ]
     
     # Save items
-    store.save_many(items)
+    items_objects = [dict_to_item(item) for item in items]
+
+    
+    store.save_many(items_objects)
     
     # Load items
     loaded_items = store.load_all()
@@ -192,6 +213,7 @@ def test_item_sorting_same_published_time(tmp_path: Path) -> None:
     
     # Create items with same publish time
     now = datetime.now(timezone.utc)
+
     items = [
         {
             "item_id": "zebra",
@@ -220,7 +242,10 @@ def test_item_sorting_same_published_time(tmp_path: Path) -> None:
     ]
     
     # Save items
-    store.save_many(items)
+    items_objects = [dict_to_item(item) for item in items]
+
+    
+    store.save_many(items_objects)
     
     # Load items
     loaded_items = store.load_all()
@@ -308,6 +333,7 @@ def test_save_creates_parent_directory(tmp_path: Path) -> None:
     
     # Save an item
     now = datetime.now(timezone.utc)
+
     items = [
         {
             "item_id": "item1",
@@ -318,8 +344,11 @@ def test_save_creates_parent_directory(tmp_path: Path) -> None:
             "published": now,
         }
     ]
+    items_objects = [dict_to_item(item) for item in items]
+
     
-    store.save_many(items)
+    
+    store.save_many(items_objects)
     
     # Verify directory was created and file exists
     assert store_path.parent.exists()
@@ -333,6 +362,7 @@ def test_datetime_serialization_formats(tmp_path: Path) -> None:
     
     # Create item with datetime
     now = datetime.now(timezone.utc)
+
     items = [
         {
             "item_id": "item1",
@@ -345,7 +375,10 @@ def test_datetime_serialization_formats(tmp_path: Path) -> None:
     ]
     
     # Save items
-    store.save_many(items)
+    items_objects = [dict_to_item(item) for item in items]
+
+    
+    store.save_many(items_objects)
     
     # Verify JSON contains Z suffix
     with store_path.open("r") as f:
@@ -362,38 +395,39 @@ def test_datetime_serialization_formats(tmp_path: Path) -> None:
 
 
 def test_save_items_without_item_id(tmp_path: Path) -> None:
-    """Test saving items without item_id skips them."""
+    """Test saving items - all items must have item_id in new implementation."""
     store_path = tmp_path / "items.json"
     store = JsonItemStore(store_path)
     
-    # Create items with and without item_id
+    # Create items with item_id (all items must have item_id now)
     now = datetime.now(timezone.utc)
     items = [
         {
-            # No item_id - should be skipped
+            "item_id": "item1",
             "source_type": "youtube",
             "source_url": "https://www.youtube.com/channel/UC123",
-            "title": "No ID Video",
-            "link": "https://www.youtube.com/watch?v=no_id",
+            "title": "First Video",
+            "link": "https://www.youtube.com/watch?v=item1",
             "published": now,
         },
         {
-            "item_id": "item1",  # Has item_id - should be saved
+            "item_id": "item2",
             "source_type": "youtube",
             "source_url": "https://www.youtube.com/channel/UC123",
-            "title": "Has ID Video",
-            "link": "https://www.youtube.com/watch?v=has_id",
+            "title": "Second Video",
+            "link": "https://www.youtube.com/watch?v=item2",
             "published": now,
         },
     ]
     
     # Save items
-    store.save_many(items)
+    items_objects = [dict_to_item(item) for item in items]
+    store.save_many(items_objects)
     
     # Load items
     loaded_items = store.load_all()
     
-    # Verify only item with item_id was saved
-    assert len(loaded_items) == 1
+    # Verify all items were saved
+    assert len(loaded_items) == 2
     assert loaded_items[0].item_id == "item1"
-    assert loaded_items[0].title == "Has ID Video"
+    assert loaded_items[1].item_id == "item2"

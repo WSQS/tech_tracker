@@ -3,7 +3,7 @@
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import List, Union
 
 from .item import Item
 
@@ -69,14 +69,14 @@ class JsonItemStore:
         
         return result
     
-    def save_many(self, items: List[Union["Item", Dict[str, Any]]]) -> None:
+    def save_many(self, items: List[Item]) -> None:
         """Save items to the JSON file, merging with existing items.
         
         Items are deduplicated by item_id. If an item_id already exists,
         the new item overwrites the old one.
         
         Args:
-            items: List of Item objects or item dictionaries to save.
+            items: List of Item objects to save.
         """
         # Load existing items
         existing_items = {}
@@ -89,26 +89,9 @@ class JsonItemStore:
         
         # Merge new items
         for item in items:
-            # Handle both Item objects and dictionaries
-            if isinstance(item, Item):
-                item_obj = item
-                item_id = item_obj.item_id
-            else:
-                # It's a dictionary
-                item_id = item.get("item_id")
-                if not item_id:
-                    continue  # Skip items without item_id
-                
-                try:
-                    item_obj = Item.from_dict(item)
-                except (ValueError, TypeError) as e:
-                    # Skip invalid items but continue processing others
-                    continue
-            
-            existing_items[item_id] = item_obj
+            existing_items[item.item_id] = item
         
         # Sort items by published descending, then item_id ascending
-        # Use Item objects for sorting to leverage their datetime fields
         sorted_items = sorted(
             existing_items.values(),
             key=lambda x: (-x.published.timestamp(), x.item_id)

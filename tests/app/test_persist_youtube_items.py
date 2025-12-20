@@ -2,13 +2,27 @@
 
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Dict
 from unittest.mock import patch
 
 import pytest
 
 from tech_tracker.app.persist import fetch_and_persist_youtube_items
 from tech_tracker.item_store import JsonItemStore
+from tech_tracker.item import Item
 from tech_tracker.sources.youtube.rss import build_youtube_feed_url
+
+
+def dict_to_item(item_dict: Dict[str, Any]) -> Item:
+    """Convert dictionary to Item object."""
+    return Item(
+        item_id=item_dict["item_id"],
+        source_type=item_dict["source_type"],
+        source_url=item_dict["source_url"],
+        title=item_dict["title"],
+        link=item_dict["link"],
+        published=item_dict["published"],
+    )
 
 
 # Sample YouTube RSS feed XML with 2 entries (reused from test_youtube_rss_parse.py)
@@ -273,7 +287,9 @@ title = "Test Channel"
             "published": now.replace(hour=9),
         },
     ]
-    store.save_many(existing_items)
+    # Convert dicts to Item objects
+    existing_item_objects = [dict_to_item(item) for item in existing_items]
+    store.save_many(existing_item_objects)
     
     # Fetch and persist items
     count = fetch_and_persist_youtube_items(config_file, fake_downloader, store)
