@@ -143,7 +143,7 @@ title = "Test Channel"
         assert published.tzinfo == timezone.utc
         assert published == datetime(2023, 12, 20, 9, 0, 0, tzinfo=timezone.utc)
         
-        # Verify stdout still outputs videos JSON (not items)
+        # Verify stdout outputs items JSON (new behavior with --store)
         captured = capsys.readouterr()
         output_json = json.loads(captured.out)
         assert isinstance(output_json, dict)
@@ -151,8 +151,60 @@ title = "Test Channel"
         youtube_url = "https://www.youtube.com/channel/UC1234567890"
         assert youtube_url in output_json
         assert len(output_json[youtube_url]) == 1
-        assert output_json[youtube_url][0]["video_id"] == "abc123def456"
+        assert output_json[youtube_url][0]["item_id"] == "abc123def456"
         
-        # Verify stdout structure is videos, not items
-        assert "item_id" not in output_json[youtube_url][0]  # videos have video_id, not item_id
-        assert "source_type" not in output_json[youtube_url][0]  # videos don't have source_type
+        # Verify stdout structure is items, not videos
+        assert "video_id" not in output_json[youtube_url][0]  # items have item_id, not video_id
+        assert "source_type" in output_json[youtube_url][0]  # items have source_type
+        assert output_json[youtube_url][0]["source_type"] == "youtube"
+
+
+def test_cli_youtube_store_second_run_outputs_empty(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test that second run with --store outputs empty list when no new items."""
+    # Create test configuration
+    config_content = """[[sources]]
+type = "youtube"
+url = "https://www.youtube.com/channel/UC1234567890"
+title = "Test Channel"
+"""
+    
+    config_file = tmp_path / "config.toml"
+    config_file.write_text(config_content)
+    
+    # Build expected feed URL
+    expected_feed_url = build_youtube_feed_url("UC1234567890")
+    
+    # Create fake downloader
+    fake_downloader = FakeDownloader({expected_feed_url: YOUTUBE_FEED_XML})
+    
+    # Define store path
+    store_path = tmp_path / "items.json"
+    
+    # Patch UrllibFeedDownloader and run CLI twice
+    with patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
+        # First run - should output the new item
+        result1 = main(["youtube", "--config", str(config_file), "--store", str(store_path)])
+        assert result1 == 0
+        
+        captured1 = capsys.readouterr()
+        output_json1 = json.loads(captured1.out)
+        
+        youtube_url = "https://www.youtube.com/channel/UC1234567890"
+        assert youtube_url in output_json1
+        assert len(output_json1[youtube_url]) == 1
+        assert output_json1[youtube_url][0]["item_id"] == "abc123def456"
+        
+        # Second run - should output empty list (no new items)
+        result2 = main(["youtube", "--config", str(config_file), "--store", str(store_path)])
+        assert result2 == 0
+        
+        captured2 = capsys.readouterr()
+        output_json2 = json.loads(captured2.out)
+        
+        # When no new items, output should be empty dict or contain empty lists
+        if output_json2:  # If not empty dict, should contain empty list for this URL
+            assert youtube_url in output_json2
+            assert len(output_json2[youtube_url]) == 0  # No new items
+        else:
+            # Empty dict is also acceptable when no items at all
+            pass

@@ -77,7 +77,7 @@ title = "Test Channel"
         output_json = json.loads(captured.out)
         assert isinstance(output_json, dict)
         
-        # The output should use the original YouTube URL as key, not the feed URL
+        # The output should use the original YouTube URL as key, and contain videos
         youtube_url = "https://www.youtube.com/channel/UC1234567890"
         assert youtube_url in output_json
         assert len(output_json[youtube_url]) == 1
@@ -121,11 +121,11 @@ title = "Test Channel"
         output_json = json.loads(captured.out)
         assert isinstance(output_json, dict)
         
-        # The output should use the original YouTube URL as key, not the feed URL
+        # The output should use the original YouTube URL as key, but contain items (not videos)
         youtube_url = "https://www.youtube.com/channel/UC1234567890"
         assert youtube_url in output_json
         assert len(output_json[youtube_url]) == 1
-        assert output_json[youtube_url][0]["video_id"] == "abc123def456"
+        assert output_json[youtube_url][0]["item_id"] == "abc123def456"  # items have item_id
         assert output_json[youtube_url][0]["title"] == "Test Video Title"
 
 
@@ -166,12 +166,20 @@ title = "Test Channel"
     assert result_without_store == 0
     assert result_with_store == 0
     
-    # Verify JSON structures are identical
-    assert json_without_store == json_with_store
-    
-    # Verify specific content
+# Note: With --store, output now contains items instead of videos
+    # This is the expected behavior per the task requirements
     assert isinstance(json_without_store, dict)
-    youtube_url = "https://www.youtube.com/channel/UC1234567890"
-    assert youtube_url in json_without_store
-    assert len(json_without_store[youtube_url]) == 1
-    assert json_without_store[youtube_url][0]["video_id"] == "abc123def456"
+    youtube_url_without = "https://www.youtube.com/channel/UC1234567890"
+    youtube_url_with = "https://www.youtube.com/channel/UC1234567890"
+    
+    # Both should contain the YouTube URL
+    assert youtube_url_without in json_without_store
+    assert youtube_url_with in json_with_store
+    
+    # Without store: contains videos
+    assert len(json_without_store[youtube_url_without]) == 1
+    assert json_without_store[youtube_url_without][0]["video_id"] == "abc123def456"
+    
+    # With store: contains items
+    assert len(json_with_store[youtube_url_with]) == 1
+    assert json_with_store[youtube_url_with][0]["item_id"] == "abc123def456"

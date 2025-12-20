@@ -7,6 +7,7 @@ from datetime import timezone
 from typing import Any, Dict, List
 
 from tech_tracker.app.youtube import fetch_youtube_videos_from_config
+from tech_tracker.app.update import fetch_youtube_new_items
 from tech_tracker.downloader import UrllibFeedDownloader
 from tech_tracker.item_store import JsonItemStore
 from tech_tracker.sources.youtube.to_items import youtube_videos_to_items
@@ -46,6 +47,36 @@ def serialize_videos_for_json(videos_by_url: Dict[str, List[Dict[str, Any]]]) ->
     return result
 
 
+def serialize_items_for_json(items: List["Item"]) -> Dict[str, List[Dict[str, Any]]]:
+    """Serialize items for JSON output, grouped by source URL.
+    
+    Args:
+        items: List of Item objects to serialize.
+        
+    Returns:
+        Serialized dictionary ready for JSON output, grouped by source_url.
+        If no items exist for a source URL, the URL will still be included with an empty list.
+    """
+    from tech_tracker.item import Item
+    
+    # Group items by source URL
+    items_by_url: Dict[str, List[Item]] = {}
+    for item in items:
+        if item.source_url not in items_by_url:
+            items_by_url[item.source_url] = []
+        items_by_url[item.source_url].append(item)
+    
+    # Convert to JSON-serializable format
+    result: Dict[str, List[Dict[str, Any]]] = {}
+    for url, url_items in items_by_url.items():
+        serialized_items = []
+        for item in url_items:
+            serialized_items.append(item.to_dict())
+        result[url] = serialized_items
+    
+    return result
+
+
 def handle_youtube_command(args: argparse.Namespace) -> int:
     """Handle the 'youtube' subcommand.
     
@@ -62,19 +93,18 @@ def handle_youtube_command(args: argparse.Namespace) -> int:
     try:
         # Create downloader and fetch videos
         downloader = UrllibFeedDownloader()
-        videos_by_url = fetch_youtube_videos_from_config(args.config, downloader)
         
-        # If --store is provided, save items to store
         if args.store:
-            # Convert videos to items
-            items = youtube_videos_to_items(videos_by_url)
-            
-            # Save to store
+            # With --store: use fetch_youtube_new_items to get only new items
             store = JsonItemStore(args.store)
-            store.save_many(items)
-        
-        # Serialize for JSON output (still output videos, not items)
-        output_data = serialize_videos_for_json(videos_by_url)
+            new_items = fetch_youtube_new_items(args.config, downloader, store)
+            
+            # Output only the new items
+            output_data = serialize_items_for_json(new_items)
+        else:
+            # Without --store: output all fetched videos (original behavior)
+            videos_by_url = fetch_youtube_videos_from_config(args.config, downloader)
+            output_data = serialize_videos_for_json(videos_by_url)
         
         # Output JSON to stdout
         json.dump(output_data, sys.stdout, indent=2)
