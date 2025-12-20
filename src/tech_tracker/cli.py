@@ -6,7 +6,7 @@ import sys
 from datetime import timezone
 from typing import Any, Dict, List
 
-from tech_tracker.app_youtube import fetch_youtube_videos_from_config
+from tech_tracker.app.youtube import fetch_youtube_videos_from_config
 from tech_tracker.downloader import UrllibFeedDownloader
 from tech_tracker.item_store import JsonItemStore
 from tech_tracker.sources.youtube.to_items import youtube_videos_to_items
