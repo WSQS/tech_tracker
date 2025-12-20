@@ -90,3 +90,40 @@ class LatestRecommender:
         }
         
         return RecommendResult(items=limited_items, meta=meta)
+
+
+def recommend_from_store(
+    store: "JsonItemStore",
+    recommender: Recommender,
+    limit: int = 20,
+    context: Dict[str, Any] | None = None,
+) -> RecommendResult:
+    """Generate recommendations from a JsonItemStore.
+    
+    Args:
+        store: JsonItemStore instance to load items from.
+        recommender: Recommender strategy to use.
+        limit: Maximum number of items to recommend.
+        context: Additional context for recommendation strategies.
+        
+    Returns:
+        Recommendation result with items and metadata.
+    """
+    # Load items from store
+    items = store.load_all()
+    
+    # Create recommendation request
+    req = RecommendRequest(items=items, limit=limit, context=context or {})
+    
+    # Get recommendation
+    result = recommender.recommend(req)
+    
+    # Enhance metadata with store and recommender info
+    enhanced_meta = dict(result.meta)  # Copy existing meta
+    enhanced_meta.update({
+        "source": "store",
+        "recommender": recommender.name,
+    })
+    
+    # Return new result with enhanced metadata
+    return RecommendResult(items=result.items, meta=enhanced_meta)
