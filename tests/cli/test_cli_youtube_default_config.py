@@ -130,6 +130,39 @@ def test_cli_youtube_creates_default_config_when_missing(tmp_path: Path, capsys:
         assert default_config_path.read_text(encoding="utf-8") == ""
 
 
+def test_cli_youtube_missing_config_uses_default(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test YouTube CLI with missing config argument (now uses default config instead of error)."""
+    # This test covers the behavior that was previously tested in test_cli_youtube_missing_config
+    # Before T004: missing --config would cause SystemExit with code 2
+    # After T004: missing --config uses default config path and creates empty file if needed
+    
+    # Ensure default config path doesn't exist initially
+    default_config_path = tmp_path / ".config" / "tech-tracker" / "config.toml"
+    assert not default_config_path.exists()
+    
+    # Patch Path.home to use tmp_path
+    with patch("pathlib.Path.home", return_value=tmp_path):
+        # Run CLI command without --config (now uses default config instead of error)
+        result = main(["youtube"])
+        
+        # Command should NOT exit with SystemExit, but return 1 due to empty config
+        assert result == 1  # Expected to fail with empty config
+        
+        # Capture stdout and stderr
+        captured = capsys.readouterr()
+        
+        # Verify default config creation message
+        assert "Created default config" in captured.out
+        assert str(default_config_path) in captured.out
+        
+        # Verify config file was created
+        assert default_config_path.exists()
+        assert default_config_path.parent.exists()
+        
+        # Verify config file is empty
+        assert default_config_path.read_text(encoding="utf-8") == ""
+
+
 def test_cli_youtube_explicit_config_overrides_default(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test that explicit --config path overrides default config behavior."""
     # Create custom config file
