@@ -1,4 +1,4 @@
-"""Tests for YouTube CLI command."""
+"""Tests for fetch CLI command with YouTube functionality."""
 
 import json
 from pathlib import Path
@@ -67,8 +67,8 @@ class FakeDownloader:
         return self.url_to_xml[url]
 
 
-def test_cli_youtube_normal(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test normal YouTube CLI execution with default store."""
+def test_cli_fetch_normal(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test normal fetch CLI execution with default store."""
     # Create test configuration
     config_content = """[[sources]]
 type = "youtube"
@@ -93,7 +93,7 @@ title = "Test Channel"
          patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
         
         # Run CLI command (now uses default store)
-        result = main(["youtube", "--config", str(config_file)])
+        result = main(["fetch", "--config", str(config_file)])
         
         # Check return code
         assert result == 0
@@ -143,8 +143,8 @@ title = "Test Channel"
         assert published == "2023-12-19T15:30:00Z"
 
 
-def test_cli_youtube_missing_config(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test YouTube CLI with missing config argument (now uses default config)."""
+def test_cli_fetch_missing_config(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test fetch CLI with missing config argument (now uses default config)."""
     # Ensure default config path doesn't exist initially
     from pathlib import Path
     default_config_path = tmp_path / ".config" / "tech-tracker" / "config.toml"
@@ -153,7 +153,7 @@ def test_cli_youtube_missing_config(tmp_path: Path, capsys: pytest.CaptureFixtur
     # Patch Path.home to use tmp_path
     with patch("pathlib.Path.home", return_value=tmp_path):
         # Run CLI command without --config (now uses default config)
-        result = main(["youtube"])
+        result = main(["fetch"])
         
         # Command will fail due to empty config, but should create the default config file
         assert result == 1  # Expected to fail with empty config
@@ -170,10 +170,10 @@ def test_cli_youtube_missing_config(tmp_path: Path, capsys: pytest.CaptureFixtur
         assert default_config_path.read_text(encoding="utf-8") == ""
 
 
-def test_cli_youtube_nonexistent_config(capsys: pytest.CaptureFixture[str]) -> None:
-    """Test YouTube CLI with nonexistent config file."""
+def test_cli_fetch_nonexistent_config(capsys: pytest.CaptureFixture[str]) -> None:
+    """Test fetch CLI with nonexistent config file."""
     # Run CLI command with nonexistent config
-    result = main(["youtube", "--config", "nonexistent.toml"])
+    result = main(["fetch", "--config", "nonexistent.toml"])
     
     # Check return code
     assert result == 1
@@ -183,8 +183,8 @@ def test_cli_youtube_nonexistent_config(capsys: pytest.CaptureFixture[str]) -> N
     assert "Error:" in captured.err
 
 
-def test_cli_youtube_invalid_config(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test YouTube CLI with invalid config file."""
+def test_cli_fetch_invalid_config(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test fetch CLI with invalid config file."""
     # Create invalid configuration
     config_content = """invalid toml content"""
     
@@ -192,7 +192,7 @@ def test_cli_youtube_invalid_config(tmp_path: Path, capsys: pytest.CaptureFixtur
     config_file.write_text(config_content)
     
     # Run CLI command
-    result = main(["youtube", "--config", str(config_file)])
+    result = main(["fetch", "--config", str(config_file)])
     
     # Check return code
     assert result == 1
@@ -202,8 +202,8 @@ def test_cli_youtube_invalid_config(tmp_path: Path, capsys: pytest.CaptureFixtur
     assert "Error:" in captured.err
 
 
-def test_cli_youtube_no_extractable_sources(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test YouTube CLI with no extractable sources."""
+def test_cli_fetch_no_extractable_sources(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test fetch CLI with no extractable sources."""
     # Create test configuration with no extractable channels
     config_content = """[[sources]]
 type = "youtube"
@@ -225,7 +225,7 @@ title = "RSS Feed"
     # Patch UrllibFeedDownloader to use our fake downloader
     with patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
         # Run CLI command
-        result = main(["youtube", "--config", str(config_file)])
+        result = main(["fetch", "--config", str(config_file)])
         
         # Check return code
         assert result == 0
@@ -240,8 +240,8 @@ title = "RSS Feed"
         assert output_data == {}
 
 
-def test_cli_youtube_downloader_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test YouTube CLI with downloader error."""
+def test_cli_fetch_downloader_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test fetch CLI with downloader error."""
     # Create test configuration
     config_content = """[[sources]]
 type = "youtube"
@@ -255,7 +255,7 @@ title = "Test Channel"
     # Patch fetch_youtube_new_items to raise an error
     with patch("tech_tracker.cli.fetch_youtube_new_items", side_effect=ValueError("Network error")):
         # Run CLI command
-        result = main(["youtube", "--config", str(config_file)])
+        result = main(["fetch", "--config", str(config_file)])
         
         # Check return code - should be 1 due to error
         assert result == 1
@@ -281,12 +281,12 @@ def test_cli_help(capsys: pytest.CaptureFixture[str]) -> None:
     # Note: We can't easily capture stdout when argparse exits directly
 
 
-def test_cli_youtube_help(capsys: pytest.CaptureFixture[str]) -> None:
-    """Test YouTube CLI help output."""
-    # Run CLI command with youtube --help
+def test_cli_fetch_help(capsys: pytest.CaptureFixture[str]) -> None:
+    """Test fetch CLI help output."""
+    # Run CLI command with fetch --help
     # Note: argparse will call sys.exit(0) for help
     try:
-        result = main(["youtube", "--help"])
+        result = main(["fetch", "--help"])
         # If we get here, the behavior has changed
         assert result == 0
     except SystemExit as e:

@@ -1,4 +1,4 @@
-"""Tests for CLI youtube command with default config path."""
+"""Tests for CLI fetch command with default config path."""
 
 import json
 from pathlib import Path
@@ -44,8 +44,8 @@ class FakeDownloader:
         return self.url_to_xml[url]
 
 
-def test_cli_youtube_uses_default_config_path(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test that youtube command uses default config path when --config not provided."""
+def test_cli_fetch_uses_default_config_path(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test that fetch command uses default config path when --config not provided."""
     # Create default config file in tmp_path's home directory
     default_config_path = tmp_path / ".config" / "tech-tracker" / "config.toml"
     default_config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -71,8 +71,8 @@ title = "Test Channel"
     with patch("pathlib.Path.home", return_value=tmp_path), \
          patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
         
-        # Run CLI youtube command without --config
-        result = main(["youtube"])
+        # Run CLI fetch command without --config
+        result = main(["fetch"])
         
         # Check return code
         assert result == 0
@@ -95,8 +95,8 @@ title = "Test Channel"
         assert output_json[youtube_url][0]["title"] == "Test Video Title"
 
 
-def test_cli_youtube_creates_default_config_when_missing(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test that youtube command creates empty default config file when it doesn't exist."""
+def test_cli_fetch_creates_default_config_when_missing(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test that fetch command creates empty default config file when it doesn't exist."""
     # Ensure default config path doesn't exist initially
     default_config_path = tmp_path / ".config" / "tech-tracker" / "config.toml"
     assert not default_config_path.exists()
@@ -109,8 +109,8 @@ def test_cli_youtube_creates_default_config_when_missing(tmp_path: Path, capsys:
     with patch("pathlib.Path.home", return_value=tmp_path), \
          patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
         
-        # Run CLI youtube command without --config
-        result = main(["youtube"])
+        # Run CLI fetch command without --config
+        result = main(["fetch"])
         
         # Command will fail due to empty config, but config file should be created
         assert result == 1  # Expected to fail with empty config
@@ -130,9 +130,9 @@ def test_cli_youtube_creates_default_config_when_missing(tmp_path: Path, capsys:
         assert default_config_path.read_text(encoding="utf-8") == ""
 
 
-def test_cli_youtube_missing_config_uses_default(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test YouTube CLI with missing config argument (now uses default config instead of error)."""
-    # This test covers the behavior that was previously tested in test_cli_youtube_missing_config
+def test_cli_fetch_missing_config_uses_default(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test fetch CLI with missing config argument (now uses default config instead of error)."""
+    # This test covers the behavior that was previously tested in test_cli_fetch_missing_config
     # Before T004: missing --config would cause SystemExit with code 2
     # After T004: missing --config uses default config path and creates empty file if needed
     
@@ -143,7 +143,7 @@ def test_cli_youtube_missing_config_uses_default(tmp_path: Path, capsys: pytest.
     # Patch Path.home to use tmp_path
     with patch("pathlib.Path.home", return_value=tmp_path):
         # Run CLI command without --config (now uses default config instead of error)
-        result = main(["youtube"])
+        result = main(["fetch"])
         
         # Command should NOT exit with SystemExit, but return 1 due to empty config
         assert result == 1  # Expected to fail with empty config
@@ -163,7 +163,7 @@ def test_cli_youtube_missing_config_uses_default(tmp_path: Path, capsys: pytest.
         assert default_config_path.read_text(encoding="utf-8") == ""
 
 
-def test_cli_youtube_explicit_config_overrides_default(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_fetch_explicit_config_overrides_default(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test that explicit --config path overrides default config behavior."""
     # Create custom config file
     custom_config_path = tmp_path / "custom.toml"
@@ -192,8 +192,8 @@ title = "Test Channel"
     with patch("pathlib.Path.home", return_value=tmp_path), \
          patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
         
-        # Run CLI youtube command with explicit --config
-        result = main(["youtube", "--config", str(custom_config_path)])
+        # Run CLI fetch command with explicit --config
+        result = main(["fetch", "--config", str(custom_config_path)])
         
         # Check return code
         assert result == 0

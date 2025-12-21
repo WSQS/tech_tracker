@@ -1,4 +1,4 @@
-"""Tests for CLI YouTube --store argument writing items to store."""
+"""Tests for CLI fetch --store argument writing items to store."""
 
 import json
 from datetime import datetime, timezone
@@ -46,7 +46,7 @@ class FakeDownloader:
         return self.url_to_xml[url]
 
 
-def test_cli_youtube_without_store_uses_default_store(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_fetch_without_store_uses_default_store(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test scenario a): CLI without --store uses default store and outputs items."""
     from unittest.mock import patch
     
@@ -74,7 +74,7 @@ title = "Test Channel"
          patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
         
         # Run CLI without --store
-        result = main(["youtube", "--config", str(config_file)])
+        result = main(["fetch", "--config", str(config_file)])
         
         # Check return code
         assert result == 0
@@ -93,7 +93,7 @@ title = "Test Channel"
         assert output_json[youtube_url][0]["item_id"] == "abc123def456"  # items have item_id, not video_id
 
 
-def test_cli_youtube_with_store_creates_file_and_writes_items(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_fetch_with_store_creates_file_and_writes_items(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test scenario b): CLI with --store creates file and writes correct items."""
     # Create test configuration
     config_content = """[[sources]]
@@ -117,7 +117,7 @@ title = "Test Channel"
     # Patch UrllibFeedDownloader and run CLI
     with patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
         # Run CLI with --store
-        result = main(["youtube", "--config", str(config_file), "--store", str(store_path)])
+        result = main(["fetch", "--config", str(config_file), "--store", str(store_path)])
         
         # Check return code
         assert result == 0
@@ -163,7 +163,7 @@ title = "Test Channel"
         assert output_json[youtube_url][0]["source_type"] == "youtube"
 
 
-def test_cli_youtube_store_second_run_outputs_empty(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_fetch_store_second_run_outputs_empty(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test that second run with --store outputs empty list when no new items."""
     # Create test configuration
     config_content = """[[sources]]
@@ -187,7 +187,7 @@ title = "Test Channel"
     # Patch UrllibFeedDownloader and run CLI twice
     with patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
         # First run - should output the new item
-        result1 = main(["youtube", "--config", str(config_file), "--store", str(store_path)])
+        result1 = main(["fetch", "--config", str(config_file), "--store", str(store_path)])
         assert result1 == 0
         
         captured1 = capsys.readouterr()
@@ -199,7 +199,7 @@ title = "Test Channel"
         assert output_json1[youtube_url][0]["item_id"] == "abc123def456"
         
         # Second run - should output empty dict (no new items)
-        result2 = main(["youtube", "--config", str(config_file), "--store", str(store_path)])
+        result2 = main(["fetch", "--config", str(config_file), "--store", str(store_path)])
         assert result2 == 0
         
         captured2 = capsys.readouterr()

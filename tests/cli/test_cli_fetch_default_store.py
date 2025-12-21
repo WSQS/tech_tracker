@@ -1,4 +1,4 @@
-"""Tests for CLI YouTube default store behavior."""
+"""Tests for CLI fetch default store behavior."""
 
 import json
 from pathlib import Path
@@ -44,7 +44,7 @@ class FakeDownloader:
         return self.url_to_xml[url]
 
 
-def test_cli_youtube_default_store_is_incremental(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_fetch_default_store_is_incremental(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test that CLI uses default store and shows incremental behavior."""
     # Create test configuration
     config_content = """[[sources]]
@@ -70,7 +70,7 @@ title = "Test Channel"
          patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
         
         # First run - should output the new item
-        result1 = main(["youtube", "--config", str(config_file)])
+        result1 = main(["fetch", "--config", str(config_file)])
         assert result1 == 0
         
         captured1 = capsys.readouterr()
@@ -86,7 +86,7 @@ title = "Test Channel"
         assert expected_store_path.exists()
         
         # Second run - should output empty dict (no new items)
-        result2 = main(["youtube", "--config", str(config_file)])
+        result2 = main(["fetch", "--config", str(config_file)])
         assert result2 == 0
         
         captured2 = capsys.readouterr()

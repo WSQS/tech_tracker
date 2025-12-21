@@ -1,4 +1,4 @@
-"""Tests for CLI YouTube --store argument."""
+"""Tests for CLI fetch --store argument."""
 
 import json
 from pathlib import Path
@@ -44,7 +44,7 @@ class FakeDownloader:
         return self.url_to_xml[url]
 
 
-def test_cli_youtube_without_store_arg(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_fetch_without_store_arg(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test scenario a): CLI without --store argument uses default store and outputs items."""
     # Create test configuration
     config_content = """[[sources]]
@@ -70,7 +70,7 @@ title = "Test Channel"
          patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
         
         # Run CLI without --store
-        result = main(["youtube", "--config", str(config_file)])
+        result = main(["fetch", "--config", str(config_file)])
         
         # Check return code
         assert result == 0
@@ -93,7 +93,7 @@ title = "Test Channel"
         assert output_json[youtube_url][0]["title"] == "Test Video Title"
 
 
-def test_cli_youtube_with_store_arg(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_fetch_with_store_arg(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test scenario b): CLI with --store argument outputs normal JSON."""
     # Create test configuration
     config_content = """[[sources]]
@@ -117,7 +117,7 @@ title = "Test Channel"
     # Patch UrllibFeedDownloader and run CLI
     with patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
         # Run CLI with --store
-        result = main(["youtube", "--config", str(config_file), "--store", str(store_path)])
+        result = main(["fetch", "--config", str(config_file), "--store", str(store_path)])
         
         # Check return code
         assert result == 0
@@ -137,7 +137,7 @@ title = "Test Channel"
         assert output_json[youtube_url][0]["title"] == "Test Video Title"
 
 
-def test_cli_youtube_store_arg_output_consistency(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_fetch_store_arg_output_consistency(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test scenario c): outputs with and without --store are both items format."""
     # Create test configuration
     config_content = """[[sources]]
@@ -164,13 +164,13 @@ title = "Test Channel"
     # Run CLI without --store (uses default store)
     with patch("pathlib.Path.home", return_value=tmp_path), \
          patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
-        result_without_store = main(["youtube", "--config", str(config_file)])
+        result_without_store = main(["fetch", "--config", str(config_file)])
         captured_without_store = capsys.readouterr()
         json_without_store = json.loads(captured_without_store.out)
     
     # Run CLI with --store (uses specified store)
     with patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
-        result_with_store = main(["youtube", "--config", str(config_file), "--store", str(store_path)])
+        result_with_store = main(["fetch", "--config", str(config_file), "--store", str(store_path)])
         captured_with_store = capsys.readouterr()
         json_with_store = json.loads(captured_with_store.out)
     
