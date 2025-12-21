@@ -11,6 +11,7 @@ class Item:
     title: str
     link: str
     published: datetime  # Must be timezone-aware UTC
+    seen: bool = False  # Whether the item has been seen by the user
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert Item to dictionary, with published as Z-format string."""
@@ -23,6 +24,7 @@ class Item:
             "title": self.title,
             "link": self.link,
             "published": published_utc.isoformat().replace("+00:00", "Z"),
+            "seen": self.seen,
         }
 
     @classmethod
@@ -32,6 +34,7 @@ class Item:
         Supports:
         - d["published"] as "....Z" string (with or without microseconds)
         - d["published"] as timezone-aware datetime (optional)
+        - d["seen"] as bool (optional, defaults to False for backward compatibility)
         """
         # Check required fields
         required_fields = ["item_id", "source_type", "source_url", "title", "link", "published"]
@@ -61,6 +64,11 @@ class Item:
         else:
             raise TypeError(f"Published must be str or datetime, got {type(published_raw)}")
         
+        # Handle seen field with backward compatibility
+        seen = d.get("seen", False)
+        if not isinstance(seen, bool):
+            raise ValueError(f"Seen field must be boolean, got {type(seen)}")
+        
         return cls(
             item_id=d["item_id"],
             source_type=d["source_type"],
@@ -68,4 +76,5 @@ class Item:
             title=d["title"],
             link=d["link"],
             published=published,
+            seen=seen,
         )

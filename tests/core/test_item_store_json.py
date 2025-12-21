@@ -20,6 +20,7 @@ def dict_to_item(item_dict: Dict[str, Any]) -> Item:
         title=item_dict["title"],
         link=item_dict["link"],
         published=item_dict["published"],
+        seen=item_dict.get("seen", False),
     )
 
 
@@ -396,39 +397,97 @@ def test_datetime_serialization_formats(tmp_path: Path) -> None:
 
 
 def test_save_items_without_item_id(tmp_path: Path) -> None:
-    """Test saving items - all items must have item_id in new implementation."""
+    """Test saving items without item_id field."""
+    store = JsonItemStore(Path(tmp_path) / "items.json")
+    
+    # Create item without item_id
+    item_dict = {
+        "source_type": "youtube",
+        "source_url": "https://www.youtube.com/channel/UC123",
+        "title": "Test Video",
+        "link": "https://www.youtube.com/watch?v=abc123",
+        "published": "2023-12-20T09:00:00Z",
+    }
+    
+    with pytest.raises(KeyError, match="Missing required field: 'item_id'"):
+        Item.from_dict(item_dict)
+
+
+def test_save_and_load_items_with_seen_field(tmp_path: Path) -> None:
+    """Test saving and loading items with seen field."""
     store_path = tmp_path / "items.json"
     store = JsonItemStore(store_path)
     
-    # Create items with item_id (all items must have item_id now)
-    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
+    # Create test items with seen field
+    base_time = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
     items = [
-        {
-            "item_id": "item1",
-            "source_type": "youtube",
-            "source_url": "https://www.youtube.com/channel/UC123",
-            "title": "First Video",
-            "link": "https://www.youtube.com/watch?v=item1",
-            "published": now,
-        },
-        {
-            "item_id": "item2",
-            "source_type": "youtube",
-            "source_url": "https://www.youtube.com/channel/UC123",
-            "title": "Second Video",
-            "link": "https://www.youtube.com/watch?v=item2",
-            "published": now,
-        },
+        Item(
+            item_id="item1",
+            source_type="youtube",
+            source_url="https://www.youtube.com/channel/UC123",
+            title="First Video",
+            link="https://www.youtube.com/watch?v=abc123",
+            published=base_time,
+            seen=True,
+        ),
+        Item(
+            item_id="item2",
+            source_type="youtube",
+            source_url="https://www.youtube.com/channel/UC123",
+            title="Second Video",
+            link="https://www.youtube.com/watch?v=def456",
+            published=base_time.replace(hour=16),  # 4 PM
+            seen=False,
+        ),
     ]
     
     # Save items
-    items_objects = [dict_to_item(item) for item in items]
-    store.save_many(items_objects)
+    store.save_many(items)
     
     # Load items
     loaded_items = store.load_all()
     
-    # Verify all items were saved
+    # Verify items
     assert len(loaded_items) == 2
-    assert loaded_items[0].item_id == "item1"
-    assert loaded_items[1].item_id == "item2"
+    
+    # Check first item (item2 - published at 4 PM, comes first due to descending sort)
+    first_item = loaded_items[0]
+    assert first_item.item_id == "item2"
+    assert first_item.seen is False
+    
+    # Check second item (item1 - published at 3 PM, comes second due to descending sort)
+    second_item = loaded_items[1]
+    assert second_item.item_id == "item1"
+    assert second_item.seen is True
+
+
+def test_load_items_without_seen_field_backward_compatibility(tmp_path: Path) -> None:
+    """Test loading items without seen field for backward compatibility."""
+    store_path = tmp_path / "items.json"
+    
+    # Create JSON file without seen field (simulating old store)
+    old_data = {
+        "items": [
+            {
+                "item_id": "item1",
+                "source_type": "youtube",
+                "source_url": "https://www.youtube.com/channel/UC123",
+                "title": "First Video",
+                "link": "https://www.youtube.com/watch?v=abc123",
+                "published": "2023-12-20T09:00:00Z",
+            }
+        ]
+    }
+    
+    # Write old format JSON
+    store_path.write_text(json.dumps(old_data, indent=2), encoding="utf-8")
+    
+    # Load items
+    store = JsonItemStore(store_path)
+    loaded_items = store.load_all()
+    
+    # Verify items
+    assert len(loaded_items) == 1
+    item = loaded_items[0]
+    assert item.item_id == "item1"
+    assert item.seen is False  # Should default to False
