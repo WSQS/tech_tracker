@@ -97,8 +97,8 @@ def serialize_items_for_json(items: List["Item"]) -> Dict[str, List[Dict[str, An
     return result
 
 
-def handle_youtube_command(args: argparse.Namespace) -> int:
-    """Handle the 'youtube' subcommand.
+def handle_fetch_command(args: argparse.Namespace) -> int:
+    """Handle the 'fetch' subcommand.
     
     Args:
         args: Parsed command-line arguments.
@@ -205,17 +205,17 @@ def main(argv: list[str] | None = None) -> int:
     
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
     
-    # YouTube subcommand
-    youtube_parser = subparsers.add_parser(
-        "youtube",
+    # Fetch subcommand
+    fetch_parser = subparsers.add_parser(
+        "fetch",
         help="Fetch videos from YouTube channels in config"
     )
-    youtube_parser.add_argument(
+    fetch_parser.add_argument(
         "--config",
         required=False,
         help="Path to TOML configuration file (default: ~/.config/tech-tracker/config.toml)"
     )
-    youtube_parser.add_argument(
+    fetch_parser.add_argument(
         "--store",
         type=str,
         required=False,
@@ -232,8 +232,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     
     # Handle commands
-    if args.command == "youtube":
-        return handle_youtube_command(args)
+    if args.command == "fetch":
+        return handle_fetch_command(args)
     elif args.command == "recommend":
         return handle_recommend_command(args)
     else:
