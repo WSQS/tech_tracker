@@ -189,6 +189,72 @@ def handle_recommend_command(args: argparse.Namespace) -> int:
         return 1
 
 
+def handle_modify_command(args: argparse.Namespace) -> int:
+    """Handle the 'modify' subcommand.
+    
+    Args:
+        args: Parsed command-line arguments.
+        
+    Returns:
+        Exit code (0 for success, non-zero for error).
+    """
+    try:
+        # Import required modules
+        from tech_tracker.item import Item
+        from tech_tracker.item_store import JsonItemStore
+        from pathlib import Path
+        
+        # Check if action is provided (help was requested)
+        if args.action is None:
+            return 1
+        
+        # Determine store path (default if not provided)
+        if args.store is None:
+            store_path = default_store_path()
+        else:
+            store_path = args.store
+        
+        # Load items from store
+        store = JsonItemStore(store_path)
+        items = store.load_all()
+        
+        # Find the target item by ID
+        target_item = None
+        for item in items:
+            if item.item_id == args.item_id:
+                target_item = item
+                break
+        
+        # If item not found, return error
+        if target_item is None:
+            print(f"Error: Item with ID '{args.item_id}' not found", file=sys.stderr)
+            return 1
+        
+        # Create updated item with new seen status
+        updated_item = Item(
+            item_id=target_item.item_id,
+            source_type=target_item.source_type,
+            source_url=target_item.source_url,
+            title=target_item.title,
+            link=target_item.link,
+            published=target_item.published,
+            seen=args.action == "seen"  # True for seen, False for unseen
+        )
+        
+        # Save the updated item (this will overwrite the existing one)
+        store.save_many([updated_item])
+        
+        # Output success message
+        action_word = "seen" if args.action == "seen" else "unseen"
+        print(f"Marked item {args.item_id} as {action_word}")
+        
+        return 0
+        
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     """Main CLI entry point.
     
@@ -228,6 +294,39 @@ def main(argv: list[str] | None = None) -> int:
         help="Generate recommendations from stored items and save as Markdown"
     )
     
+    # Modify subcommand
+    modify_parser = subparsers.add_parser(
+        "modify",
+        help="Modify item properties (seen/unseen status)"
+    )
+    modify_parser.add_argument(
+        "--store",
+        type=str,
+        required=False,
+        help="Path to item store JSON file (default: ~/.tech-tracker/items.json)"
+    )
+    modify_subparsers = modify_parser.add_subparsers(dest="action", help="Modify actions")
+    
+    # Modify seen subcommand
+    seen_parser = modify_subparsers.add_parser(
+        "seen",
+        help="Mark an item as seen"
+    )
+    seen_parser.add_argument(
+        "item_id",
+        help="ID of the item to mark as seen"
+    )
+    
+    # Modify unseen subcommand
+    unseen_parser = modify_subparsers.add_parser(
+        "unseen",
+        help="Mark an item as unseen"
+    )
+    unseen_parser.add_argument(
+        "item_id",
+        help="ID of the item to mark as unseen"
+    )
+    
     # Parse arguments
     args = parser.parse_args(argv)
     
@@ -236,6 +335,8 @@ def main(argv: list[str] | None = None) -> int:
         return handle_fetch_command(args)
     elif args.command == "recommend":
         return handle_recommend_command(args)
+    elif args.command == "modify":
+        return handle_modify_command(args)
     else:
         parser.print_help()
         return 1
