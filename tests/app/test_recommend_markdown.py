@@ -47,6 +47,7 @@ _Strategy_: latest
 _Limit_: 5
 
 ## 1. Test Video Title
+- ID: `test123`
 - Source: youtube
 - Channel: https://youtube.com/channel/testchannel
 - Published: 2023-12-20T10:30:45Z
@@ -87,12 +88,14 @@ def test_render_two_items_ordering() -> None:
     expected = """# Recommended Items
 
 ## 1. First Video
+- ID: `item1`
 - Source: youtube
 - Channel: https://youtube.com/channel/channel1
 - Published: 2023-12-20T10:00:00Z
 - Link: https://youtube.com/watch?v=item1
 
 ## 2. Second Article
+- ID: `item2`
 - Source: rss
 - Channel: https://example.com/feed.xml
 - Published: 2023-12-20T11:00:00Z
@@ -123,6 +126,7 @@ def test_render_microseconds_in_published_time() -> None:
     expected = """# Recommended Items
 
 ## 1. Microsecond Video
+- ID: `micro123`
 - Source: youtube
 - Channel: https://youtube.com/channel/micro
 - Published: 2023-12-20T10:30:45.123456Z
@@ -155,6 +159,7 @@ def test_render_partial_meta() -> None:
 _Strategy_: latest
 
 ## 1. Partial Meta Video
+- ID: `partial123`
 - Source: youtube
 - Channel: https://youtube.com/channel/partial
 - Published: 2023-12-20T10:30:45Z
@@ -173,6 +178,7 @@ _Strategy_: latest
 _Limit_: 10
 
 ## 1. Partial Meta Video
+- ID: `partial123`
 - Source: youtube
 - Channel: https://youtube.com/channel/partial
 - Published: 2023-12-20T10:30:45Z

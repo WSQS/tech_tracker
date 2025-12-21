@@ -104,6 +104,23 @@ def test_cli_recommend_with_items(tmp_path: Path, capsys: pytest.CaptureFixture[
         # Verify both content existence and order: all expected titles must be present in correct order
         assert len(markdown_titles) == len(expected_titles)
         assert expected_titles == markdown_titles
+        
+        # Verify that item_id lines are present and correctly formatted
+        id_lines = [line for line in markdown_content.split('\n') if line.startswith("- ID:")]
+        assert len(id_lines) == len(expected_result.items)
+        
+        # Extract item IDs from markdown
+        markdown_ids = []
+        for line in id_lines:
+            # Extract ID from "- ID: `item_id`" format
+            if "`" in line:
+                id_part = line.split("`", 1)[1].split("`", 1)[0]
+                markdown_ids.append(id_part)
+        
+        # Verify item IDs match expected result
+        expected_ids = [item.item_id for item in expected_result.items]
+        assert len(markdown_ids) == len(expected_ids)
+        assert expected_ids == markdown_ids
 
 
 def test_cli_recommend_with_empty_store(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -187,3 +204,9 @@ def test_cli_recommend_overwrites_existing_file(tmp_path: Path, capsys: pytest.C
         # Should contain a section with the video title
         title_lines = [line for line in markdown_content.split('\n') if line.startswith("## ")]
         assert any("New Video" in line for line in title_lines)
+        
+        # Verify that the item_id is properly displayed in the markdown
+        assert "ID: `item1`" in markdown_content
+        # Should contain the ID line in the correct format with backticks
+        id_lines = [line for line in markdown_content.split('\n') if line.startswith("- ID:")]
+        assert any("`item1`" in line for line in id_lines)

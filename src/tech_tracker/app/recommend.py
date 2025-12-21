@@ -179,6 +179,7 @@ def render_recommendation_markdown(result: RecommendResult) -> str:
         published_iso_z = item.published.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
         
         # Bullet points
+        lines.append(f"- ID: `{item.item_id}`")
         lines.append(f"- Source: {item.source_type}")
         lines.append(f"- Channel: {item.source_url}")
         lines.append(f"- Published: {published_iso_z}")
