@@ -13,6 +13,16 @@ from tech_tracker.item_store import JsonItemStore
 from tech_tracker.sources.youtube.to_items import youtube_videos_to_items
 
 
+def default_store_path() -> "Path":
+    """Get the default store path.
+    
+    Returns:
+        Path to the default store file in user's home directory.
+    """
+    from pathlib import Path
+    return Path.home() / ".tech-tracker" / "items.json"
+
+
 def serialize_videos_for_json(videos_by_url: Dict[str, List[Dict[str, Any]]]) -> Dict[str, List[Dict[str, Any]]]:
     """Serialize videos for JSON output.
     
@@ -94,17 +104,18 @@ def handle_youtube_command(args: argparse.Namespace) -> int:
         # Create downloader and fetch videos
         downloader = UrllibFeedDownloader()
         
-        if args.store:
-            # With --store: use fetch_youtube_new_items to get only new items
-            store = JsonItemStore(args.store)
-            new_items = fetch_youtube_new_items(args.config, downloader, store)
-            
-            # Output only the new items
-            output_data = serialize_items_for_json(new_items)
+        # Always use store mode: default path if --store not provided, specified path otherwise
+        if args.store is None:
+            store_path = default_store_path()
         else:
-            # Without --store: output all fetched videos (original behavior)
-            videos_by_url = fetch_youtube_videos_from_config(args.config, downloader)
-            output_data = serialize_videos_for_json(videos_by_url)
+            store_path = args.store
+        
+        # Use fetch_youtube_new_items to get only new items
+        store = JsonItemStore(store_path)
+        new_items = fetch_youtube_new_items(args.config, downloader, store)
+        
+        # Output only the new items
+        output_data = serialize_items_for_json(new_items)
         
         # Output JSON to stdout
         json.dump(output_data, sys.stdout, indent=2)

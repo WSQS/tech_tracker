@@ -45,7 +45,7 @@ class FakeDownloader:
 
 
 def test_cli_youtube_without_store_arg(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test scenario a): CLI without --store argument outputs normal JSON."""
+    """Test scenario a): CLI without --store argument uses default store and outputs items."""
     # Create test configuration
     config_content = """[[sources]]
 type = "youtube"
@@ -62,13 +62,21 @@ title = "Test Channel"
     # Create fake downloader
     fake_downloader = FakeDownloader({expected_feed_url: YOUTUBE_FEED_XML})
     
-    # Patch UrllibFeedDownloader and run CLI
-    with patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
+    # Define expected default store path
+    default_store_path = tmp_path / ".tech-tracker" / "items.json"
+    
+    # Patch Path.home and UrllibFeedDownloader
+    with patch("pathlib.Path.home", return_value=tmp_path), \
+         patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
+        
         # Run CLI without --store
         result = main(["youtube", "--config", str(config_file)])
         
         # Check return code
         assert result == 0
+        
+        # Verify default store file was created
+        assert default_store_path.exists()
         
         # Capture stdout
         captured = capsys.readouterr()
@@ -77,11 +85,11 @@ title = "Test Channel"
         output_json = json.loads(captured.out)
         assert isinstance(output_json, dict)
         
-        # The output should use the original YouTube URL as key, and contain videos
+        # The output should use the original YouTube URL as key, and contain items
         youtube_url = "https://www.youtube.com/channel/UC1234567890"
         assert youtube_url in output_json
         assert len(output_json[youtube_url]) == 1
-        assert output_json[youtube_url][0]["video_id"] == "abc123def456"
+        assert output_json[youtube_url][0]["item_id"] == "abc123def456"  # items have item_id, not video_id
         assert output_json[youtube_url][0]["title"] == "Test Video Title"
 
 
@@ -130,7 +138,7 @@ title = "Test Channel"
 
 
 def test_cli_youtube_store_arg_output_consistency(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test scenario c): outputs with and without --store are identical."""
+    """Test scenario c): outputs with and without --store are both items format."""
     # Create test configuration
     config_content = """[[sources]]
 type = "youtube"
@@ -150,13 +158,17 @@ title = "Test Channel"
     # Store path
     store_path = tmp_path / "items.json"
     
-    # Run CLI without --store
-    with patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
+    # Define expected default store path
+    default_store_path = tmp_path / ".tech-tracker" / "items.json"
+    
+    # Run CLI without --store (uses default store)
+    with patch("pathlib.Path.home", return_value=tmp_path), \
+         patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
         result_without_store = main(["youtube", "--config", str(config_file)])
         captured_without_store = capsys.readouterr()
         json_without_store = json.loads(captured_without_store.out)
     
-    # Run CLI with --store
+    # Run CLI with --store (uses specified store)
     with patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
         result_with_store = main(["youtube", "--config", str(config_file), "--store", str(store_path)])
         captured_with_store = capsys.readouterr()
@@ -166,20 +178,19 @@ title = "Test Channel"
     assert result_without_store == 0
     assert result_with_store == 0
     
-# Note: With --store, output now contains items instead of videos
-    # This is the expected behavior per the task requirements
+    # Both should contain items format (now both use store mode)
     assert isinstance(json_without_store, dict)
-    youtube_url_without = "https://www.youtube.com/channel/UC1234567890"
-    youtube_url_with = "https://www.youtube.com/channel/UC1234567890"
+    assert isinstance(json_with_store, dict)
+    
+    youtube_url = "https://www.youtube.com/channel/UC1234567890"
     
     # Both should contain the YouTube URL
-    assert youtube_url_without in json_without_store
-    assert youtube_url_with in json_with_store
+    assert youtube_url in json_without_store
+    assert youtube_url in json_with_store
     
-    # Without store: contains videos
-    assert len(json_without_store[youtube_url_without]) == 1
-    assert json_without_store[youtube_url_without][0]["video_id"] == "abc123def456"
+    # Both should contain items (not videos)
+    assert len(json_without_store[youtube_url]) == 1
+    assert json_without_store[youtube_url][0]["item_id"] == "abc123def456"
     
-    # With store: contains items
-    assert len(json_with_store[youtube_url_with]) == 1
-    assert json_with_store[youtube_url_with][0]["item_id"] == "abc123def456"
+    assert len(json_with_store[youtube_url]) == 1
+    assert json_with_store[youtube_url][0]["item_id"] == "abc123def456"

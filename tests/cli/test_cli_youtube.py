@@ -68,7 +68,7 @@ class FakeDownloader:
 
 
 def test_cli_youtube_normal(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test normal YouTube CLI execution."""
+    """Test normal YouTube CLI execution with default store."""
     # Create test configuration
     config_content = """[[sources]]
 type = "youtube"
@@ -85,13 +85,21 @@ title = "Test Channel"
     # Create fake downloader
     fake_downloader = FakeDownloader({expected_feed_url: YOUTUBE_FEED_XML})
     
-    # Patch UrllibFeedDownloader to use our fake downloader
-    with patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
-        # Run CLI command
+    # Define expected default store path
+    default_store_path = tmp_path / ".tech-tracker" / "items.json"
+    
+    # Patch Path.home and UrllibFeedDownloader
+    with patch("pathlib.Path.home", return_value=tmp_path), \
+         patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
+        
+        # Run CLI command (now uses default store)
         result = main(["youtube", "--config", str(config_file)])
         
         # Check return code
         assert result == 0
+        
+        # Verify default store file was created
+        assert default_store_path.exists()
         
         # Capture stdout
         captured = capsys.readouterr()
@@ -99,34 +107,38 @@ title = "Test Channel"
         # Parse JSON output
         output_data = json.loads(captured.out)
         
-        # Verify structure
+        # Verify structure (now outputs items, not videos)
         assert len(output_data) == 1
         
         youtube_url = "https://www.youtube.com/channel/UC1234567890"
         assert youtube_url in output_data
         
-        videos = output_data[youtube_url]
-        assert len(videos) == 2
+        items = output_data[youtube_url]
+        assert len(items) == 2
         
-        # Check first video
-        first_video = videos[0]
-        assert first_video["video_id"] == "abc123def456"
-        assert first_video["title"] == "First Video Title"
-        assert first_video["link"] == "https://www.youtube.com/watch?v=abc123def456"
+        # Check first item
+        first_item = items[0]
+        assert first_item["item_id"] == "abc123def456"  # items have item_id, not video_id
+        assert first_item["title"] == "First Video Title"
+        assert first_item["link"] == "https://www.youtube.com/watch?v=abc123def456"
+        assert first_item["source_type"] == "youtube"
+        assert first_item["source_url"] == "https://www.youtube.com/channel/UC1234567890"
         
         # Check published date is a string with 'Z' suffix
-        published = first_video["published"]
+        published = first_item["published"]
         assert isinstance(published, str)
         assert published == "2023-12-20T09:00:00Z"
         
-        # Check second video
-        second_video = videos[1]
-        assert second_video["video_id"] == "xyz789uvw012"
-        assert second_video["title"] == "Second Video Title"
-        assert second_video["link"] == "https://www.youtube.com/watch?v=xyz789uvw012"
+        # Check second item
+        second_item = items[1]
+        assert second_item["item_id"] == "xyz789uvw012"  # items have item_id, not video_id
+        assert second_item["title"] == "Second Video Title"
+        assert second_item["link"] == "https://www.youtube.com/watch?v=xyz789uvw012"
+        assert second_item["source_type"] == "youtube"
+        assert second_item["source_url"] == "https://www.youtube.com/channel/UC1234567890"
         
         # Check published date is a string with 'Z' suffix
-        published = second_video["published"]
+        published = second_item["published"]
         assert isinstance(published, str)
         assert published == "2023-12-19T15:30:00Z"
 
@@ -229,25 +241,18 @@ title = "Test Channel"
     config_file = tmp_path / "config.toml"
     config_file.write_text(config_content)
     
-    # Create fake downloader that always raises an error
-    class ErrorDownloader:
-        def fetch_text(self, url: str) -> str:
-            raise ValueError("Network error")
-    
-    error_downloader = ErrorDownloader()
-    
-    # Patch both UrllibFeedDownloader and fetch_youtube_videos_from_config
-    with patch("tech_tracker.cli.UrllibFeedDownloader", return_value=error_downloader), \
-         patch("tech_tracker.cli.fetch_youtube_videos_from_config", side_effect=ValueError("Network error")):
+    # Patch fetch_youtube_new_items to raise an error
+    with patch("tech_tracker.cli.fetch_youtube_new_items", side_effect=ValueError("Network error")):
         # Run CLI command
         result = main(["youtube", "--config", str(config_file)])
         
-        # Check return code
+        # Check return code - should be 1 due to error
         assert result == 1
         
         # Capture stderr
         captured = capsys.readouterr()
         assert "Error:" in captured.err
+        assert "Network error" in captured.err
 
 
 def test_cli_help(capsys: pytest.CaptureFixture[str]) -> None:

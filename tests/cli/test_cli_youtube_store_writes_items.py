@@ -46,8 +46,10 @@ class FakeDownloader:
         return self.url_to_xml[url]
 
 
-def test_cli_youtube_without_store_no_file_created(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """Test scenario a): CLI without --store doesn't create store file."""
+def test_cli_youtube_without_store_uses_default_store(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test scenario a): CLI without --store uses default store and outputs items."""
+    from unittest.mock import patch
+    
     # Create test configuration
     config_content = """[[sources]]
 type = "youtube"
@@ -64,21 +66,23 @@ title = "Test Channel"
     # Create fake downloader
     fake_downloader = FakeDownloader({expected_feed_url: YOUTUBE_FEED_XML})
     
-    # Define store path (should not be created)
-    store_path = tmp_path / "items.json"
+    # Define expected default store path
+    default_store_path = tmp_path / ".tech-tracker" / "items.json"
     
-    # Patch UrllibFeedDownloader and run CLI
-    with patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
+    # Patch Path.home and UrllibFeedDownloader
+    with patch("pathlib.Path.home", return_value=tmp_path), \
+         patch("tech_tracker.cli.UrllibFeedDownloader", return_value=fake_downloader):
+        
         # Run CLI without --store
         result = main(["youtube", "--config", str(config_file)])
         
         # Check return code
         assert result == 0
         
-        # Verify store file was not created
-        assert not store_path.exists()
+        # Verify default store file was created
+        assert default_store_path.exists()
         
-        # Verify stdout still outputs videos JSON
+        # Verify stdout outputs items JSON (not videos)
         captured = capsys.readouterr()
         output_json = json.loads(captured.out)
         assert isinstance(output_json, dict)
@@ -86,7 +90,7 @@ title = "Test Channel"
         youtube_url = "https://www.youtube.com/channel/UC1234567890"
         assert youtube_url in output_json
         assert len(output_json[youtube_url]) == 1
-        assert output_json[youtube_url][0]["video_id"] == "abc123def456"
+        assert output_json[youtube_url][0]["item_id"] == "abc123def456"  # items have item_id, not video_id
 
 
 def test_cli_youtube_with_store_creates_file_and_writes_items(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
