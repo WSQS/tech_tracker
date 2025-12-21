@@ -143,20 +143,31 @@ title = "Test Channel"
         assert published == "2023-12-19T15:30:00Z"
 
 
-def test_cli_youtube_missing_config(capsys: pytest.CaptureFixture[str]) -> None:
-    """Test YouTube CLI with missing config argument."""
-    # Run CLI command without --config
-    # Note: argparse will call sys.exit(2) for missing required args
-    # So we need to handle SystemExit
-    try:
-        result = main(["youtube"])
-        # If we get here, the behavior has changed
-        assert result == 1
-    except SystemExit as e:
-        # argparse exits with code 2 for argument errors
-        assert e.code == 2
+def test_cli_youtube_missing_config(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test YouTube CLI with missing config argument (now uses default config)."""
+    # Ensure default config path doesn't exist initially
+    from pathlib import Path
+    default_config_path = tmp_path / ".config" / "tech-tracker" / "config.toml"
+    assert not default_config_path.exists()
     
-    # Note: We can't easily capture stderr when argparse exits directly
+    # Patch Path.home to use tmp_path
+    with patch("pathlib.Path.home", return_value=tmp_path):
+        # Run CLI command without --config (now uses default config)
+        result = main(["youtube"])
+        
+        # Command will fail due to empty config, but should create the default config file
+        assert result == 1  # Expected to fail with empty config
+        
+        # Capture stdout and stderr
+        captured = capsys.readouterr()
+        
+        # Verify default config creation message
+        assert "Created default config" in captured.out
+        assert str(default_config_path) in captured.out
+        
+        # Verify config file was created
+        assert default_config_path.exists()
+        assert default_config_path.read_text(encoding="utf-8") == ""
 
 
 def test_cli_youtube_nonexistent_config(capsys: pytest.CaptureFixture[str]) -> None:

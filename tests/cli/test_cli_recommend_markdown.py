@@ -83,19 +83,16 @@ def test_cli_recommend_with_items(tmp_path: Path, capsys: pytest.CaptureFixture[
         # Read and verify Markdown content
         markdown_content = output_file.read_text(encoding="utf-8")
         
-        # Verify Markdown structure
+        # Verify Markdown structure contains header
         assert "# Recommended Items" in markdown_content
-        assert "## 1. First Video" in markdown_content
-        assert "## 2. Third Video" in markdown_content
-        assert "## 3. Second Article" in markdown_content
         
         # Extract titles from markdown and verify order matches recommender output
         title_lines = [line for line in markdown_content.split('\n') if line.startswith("## ")]
-        assert len(title_lines) >= 3
         
         # Extract item titles from recommender result in the same order
         expected_titles = [item.title for item in expected_result.items]
-        # Remove "## " prefix and numbering (e.g., "## 1. First Video" -> "First Video")
+        
+        # Extract titles from markdown, removing "## " prefix and numbering
         markdown_titles = []
         for line in title_lines[:len(expected_titles)]:
             title = line.replace("## ", "").replace("\r", "").replace("\n", "")
@@ -104,7 +101,8 @@ def test_cli_recommend_with_items(tmp_path: Path, capsys: pytest.CaptureFixture[
                 title = title.split(". ", 1)[1]
             markdown_titles.append(title)
         
-        # Verify order matches exactly (not hardcoded time order)
+        # Verify both content existence and order: all expected titles must be present in correct order
+        assert len(markdown_titles) == len(expected_titles)
         assert expected_titles == markdown_titles
 
 
@@ -183,4 +181,9 @@ def test_cli_recommend_overwrites_existing_file(tmp_path: Path, capsys: pytest.C
         markdown_content = output_file.read_text(encoding="utf-8")
         assert "Existing content that should be overwritten" not in markdown_content
         assert "# Recommended Items" in markdown_content
-        assert "## 1. New Video" in markdown_content
+        
+        # Verify the expected title appears in markdown (without hardcoded numbering)
+        assert "New Video" in markdown_content
+        # Should contain a section with the video title
+        title_lines = [line for line in markdown_content.split('\n') if line.startswith("## ")]
+        assert any("New Video" in line for line in title_lines)

@@ -23,6 +23,16 @@ def default_store_path() -> "Path":
     return Path.home() / ".tech-tracker" / "items.json"
 
 
+def default_config_path() -> "Path":
+    """Get the default config path.
+    
+    Returns:
+        Path to the default config file in user's config directory.
+    """
+    from pathlib import Path
+    return Path.home() / ".config" / "tech-tracker" / "config.toml"
+
+
 def serialize_videos_for_json(videos_by_url: Dict[str, List[Dict[str, Any]]]) -> Dict[str, List[Dict[str, Any]]]:
     """Serialize videos for JSON output.
     
@@ -96,9 +106,18 @@ def handle_youtube_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for error).
     """
-    if not args.config:
-        print("Error: --config is required for youtube command", file=sys.stderr)
-        return 1
+    # Determine config path (default if not provided)
+    config_path = args.config if args.config is not None else default_config_path()
+    
+    # Create empty config file if it doesn't exist (only for default path)
+    if args.config is None and not config_path.exists():
+        from pathlib import Path
+        # Create parent directory
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        # Create empty config file
+        config_path.write_text("", encoding="utf-8")
+        # Output user-friendly message
+        print(f"Created default config: {config_path}")
     
     try:
         # Create downloader and fetch videos
@@ -112,7 +131,7 @@ def handle_youtube_command(args: argparse.Namespace) -> int:
         
         # Use fetch_youtube_new_items to get only new items
         store = JsonItemStore(store_path)
-        new_items = fetch_youtube_new_items(args.config, downloader, store)
+        new_items = fetch_youtube_new_items(config_path, downloader, store)
         
         # Output only the new items
         output_data = serialize_items_for_json(new_items)
@@ -193,8 +212,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     youtube_parser.add_argument(
         "--config",
-        required=True,
-        help="Path to TOML configuration file"
+        required=False,
+        help="Path to TOML configuration file (default: ~/.config/tech-tracker/config.toml)"
     )
     youtube_parser.add_argument(
         "--store",
