@@ -127,3 +127,56 @@ def recommend_from_store(
     
     # Return new result with enhanced metadata
     return RecommendResult(items=result.items, meta=enhanced_meta)
+
+
+def render_recommendation_markdown(result: RecommendResult) -> str:
+    """Render recommendation result as Markdown.
+    
+    Args:
+        result: Recommendation result to render.
+        
+    Returns:
+        Markdown string representation of the recommendation.
+    """
+    from datetime import timezone
+    
+    lines = []
+    
+    # 1) First line: "# Recommended Items"
+    lines.append("# Recommended Items")
+    
+    # 2) Second line: empty line
+    lines.append("")
+    
+    # 3) Meta information (strategy and limit only)
+    if result.meta:
+        if "strategy" in result.meta:
+            lines.append(f"_Strategy_: {result.meta['strategy']}")
+        if "limit" in result.meta:
+            lines.append(f"_Limit_: {result.meta['limit']}")
+        # Add empty line after meta if any meta was rendered
+        if "strategy" in result.meta or "limit" in result.meta:
+            lines.append("")
+    
+    # 4) Items sections
+    for index, item in enumerate(result.items, 1):
+        # Section title
+        lines.append(f"## {index}. {item.title}")
+        
+        # Format published time with Z suffix
+        published_iso_z = item.published.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        
+        # Bullet points
+        lines.append(f"- Source: {item.source_type}")
+        lines.append(f"- Channel: {item.source_url}")
+        lines.append(f"- Published: {published_iso_z}")
+        lines.append(f"- Link: {item.link}")
+        
+        # Empty line after each item section
+        lines.append("")
+    
+    # Join with newlines and ensure trailing newline
+    result = "\n".join(lines)
+    if not result.endswith("\n\n"):
+        result += "\n"
+    return result

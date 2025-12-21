@@ -17,7 +17,7 @@ def test_latest_recommender_returns_recommend_result() -> None:
     recommender = LatestRecommender()
     
     # Create test items
-    now = datetime.now(timezone.utc)
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
     items = [
         Item(
             item_id="item1",

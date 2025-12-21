@@ -268,7 +268,7 @@ title = "Test Channel"
     store = JsonItemStore(store_path)
     
     # Add existing items to store
-    now = datetime.now(timezone.utc)
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
     existing_items = [
         {
             "item_id": "existing_item",

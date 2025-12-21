@@ -38,8 +38,8 @@ def test_save_and_load_items(tmp_path: Path) -> None:
     store_path = tmp_path / "items.json"
     store = JsonItemStore(store_path)
     
-    # Create test items
-    now = datetime.now(timezone.utc)
+    # Create test items with fixed time to ensure consistent ordering
+    base_time = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)  # 3 PM
     items = [
         {
             "item_id": "item1",
@@ -47,7 +47,7 @@ def test_save_and_load_items(tmp_path: Path) -> None:
             "source_url": "https://www.youtube.com/channel/UC123",
             "title": "First Video",
             "link": "https://www.youtube.com/watch?v=abc123",
-            "published": now,
+            "published": base_time,
         },
         {
             "item_id": "item2",
@@ -55,7 +55,7 @@ def test_save_and_load_items(tmp_path: Path) -> None:
             "source_url": "https://example.com/rss.xml",
             "title": "First Article",
             "link": "https://example.com/article1",
-            "published": now.replace(hour=10),  # Different time
+            "published": base_time.replace(hour=10),  # 10 AM - earlier than item1
         },
     ]
     
@@ -66,17 +66,18 @@ def test_save_and_load_items(tmp_path: Path) -> None:
     # Load items
     loaded_items = store.load_all()
     
-    # Verify items match
+    # Verify items match (sorted by published desc, then item_id asc)
     assert len(loaded_items) == 2
+    # item1 (3 PM) should come first, item2 (10 AM) should come second
     assert loaded_items[0].item_id == "item1"
     assert loaded_items[0].source_type == "youtube"
     assert loaded_items[0].title == "First Video"
-    assert loaded_items[0].published == now
+    assert loaded_items[0].published == base_time
     
     assert loaded_items[1].item_id == "item2"
     assert loaded_items[1].source_type == "rss"
     assert loaded_items[1].title == "First Article"
-    assert loaded_items[1].published == now.replace(hour=10)
+    assert loaded_items[1].published == base_time.replace(hour=10)
 
 
 def test_save_and_load_with_existing_items(tmp_path: Path) -> None:
@@ -84,8 +85,8 @@ def test_save_and_load_with_existing_items(tmp_path: Path) -> None:
     store_path = tmp_path / "items.json"
     store = JsonItemStore(store_path)
     
-    # Create initial items
-    now = datetime.now(timezone.utc)
+    # Create initial items with fixed time
+    base_time = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
     initial_items = [
         {
             "item_id": "item1",
@@ -93,7 +94,7 @@ def test_save_and_load_with_existing_items(tmp_path: Path) -> None:
             "source_url": "https://www.youtube.com/channel/UC123",
             "title": "First Video",
             "link": "https://www.youtube.com/watch?v=abc123",
-            "published": now,
+            "published": base_time,
         },
         {
             "item_id": "item2",
@@ -101,7 +102,7 @@ def test_save_and_load_with_existing_items(tmp_path: Path) -> None:
             "source_url": "https://example.com/rss.xml",
             "title": "First Article",
             "link": "https://example.com/article1",
-            "published": now.replace(hour=10),
+            "published": base_time.replace(hour=10),
         },
     ]
     
@@ -117,7 +118,7 @@ def test_save_and_load_with_existing_items(tmp_path: Path) -> None:
             "source_url": "https://example.com/rss.xml",
             "title": "Updated Article",  # Different title
             "link": "https://example.com/article1",
-            "published": now.replace(hour=11),  # Different time
+            "published": base_time.replace(hour=11),  # Different time
         },
         {
             "item_id": "item3",  # New item
@@ -125,7 +126,7 @@ def test_save_and_load_with_existing_items(tmp_path: Path) -> None:
             "source_url": "https://bilibili.com/video/BV123",
             "title": "Bilibili Video",
             "link": "https://bilibili.com/video/BV123",
-            "published": now.replace(hour=12),
+            "published": base_time.replace(hour=12),
         },
     ]
     
@@ -142,17 +143,17 @@ def test_save_and_load_with_existing_items(tmp_path: Path) -> None:
     # Verify item2 was overwritten
     item2 = next(item for item in loaded_items if item.item_id == "item2")
     assert item2.title == "Updated Article"
-    assert item2.published == now.replace(hour=11)
+    assert item2.published == base_time.replace(hour=11)
     
     # Verify item1 is unchanged
     item1 = next(item for item in loaded_items if item.item_id == "item1")
     assert item1.title == "First Video"
-    assert item1.published == now
+    assert item1.published == base_time
     
     # Verify item3 was added
     item3 = next(item for item in loaded_items if item.item_id == "item3")
     assert item3.title == "Bilibili Video"
-    assert item3.published == now.replace(hour=12)
+    assert item3.published == base_time.replace(hour=12)
 
 
 def test_item_sorting(tmp_path: Path) -> None:
@@ -161,7 +162,7 @@ def test_item_sorting(tmp_path: Path) -> None:
     store = JsonItemStore(store_path)
     
     # Create items with different publish times
-    now = datetime.now(timezone.utc)
+    base_time = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
 
     items = [
         {
@@ -170,7 +171,7 @@ def test_item_sorting(tmp_path: Path) -> None:
             "source_url": "https://www.youtube.com/channel/UC123",
             "title": "First Video",
             "link": "https://www.youtube.com/watch?v=abc123",
-            "published": now.replace(hour=10),  # Middle time
+            "published": base_time.replace(hour=10),  # Middle time
         },
         {
             "item_id": "item2",
@@ -178,7 +179,7 @@ def test_item_sorting(tmp_path: Path) -> None:
             "source_url": "https://example.com/rss.xml",
             "title": "First Article",
             "link": "https://example.com/article1",
-            "published": now.replace(hour=12),  # Latest time
+            "published": base_time.replace(hour=12),  # Latest time
         },
         {
             "item_id": "item3",
@@ -186,7 +187,7 @@ def test_item_sorting(tmp_path: Path) -> None:
             "source_url": "https://bilibili.com/video/BV123",
             "title": "Bilibili Video",
             "link": "https://bilibili.com/video/BV123",
-            "published": now.replace(hour=8),  # Earliest time
+            "published": base_time.replace(hour=8),  # Earliest time
         },
     ]
     
@@ -212,7 +213,7 @@ def test_item_sorting_same_published_time(tmp_path: Path) -> None:
     store = JsonItemStore(store_path)
     
     # Create items with same publish time
-    now = datetime.now(timezone.utc)
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
 
     items = [
         {
@@ -332,7 +333,7 @@ def test_save_creates_parent_directory(tmp_path: Path) -> None:
     assert not store_path.parent.exists()
     
     # Save an item
-    now = datetime.now(timezone.utc)
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
 
     items = [
         {
@@ -361,7 +362,7 @@ def test_datetime_serialization_formats(tmp_path: Path) -> None:
     store = JsonItemStore(store_path)
     
     # Create item with datetime
-    now = datetime.now(timezone.utc)
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
 
     items = [
         {
@@ -400,7 +401,7 @@ def test_save_items_without_item_id(tmp_path: Path) -> None:
     store = JsonItemStore(store_path)
     
     # Create items with item_id (all items must have item_id now)
-    now = datetime.now(timezone.utc)
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
     items = [
         {
             "item_id": "item1",
