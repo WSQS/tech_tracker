@@ -129,7 +129,7 @@ def handle_fetch_command(args: argparse.Namespace) -> int:
         else:
             store_path = args.store
         
-        # Use fetch_youtube_new_items to get only new items
+        # Use fetch_youtube_new_items to get only new items (internal implementation)
         store = JsonItemStore(store_path)
         new_items = fetch_youtube_new_items(config_path, downloader, store)
         
@@ -200,7 +200,7 @@ def main(argv: list[str] | None = None) -> int:
     """
     parser = argparse.ArgumentParser(
         prog="tech-tracker",
-        description="Tech tracking tool for RSS feeds and YouTube channels"
+        description="Tech tracking tool for RSS feeds and other sources"
     )
     
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -208,7 +208,7 @@ def main(argv: list[str] | None = None) -> int:
     # Fetch subcommand
     fetch_parser = subparsers.add_parser(
         "fetch",
-        help="Fetch videos from YouTube channels in config"
+        help="Fetch items from configured sources"
     )
     fetch_parser.add_argument(
         "--config",
@@ -219,7 +219,7 @@ def main(argv: list[str] | None = None) -> int:
         "--store",
         type=str,
         required=False,
-        help="Path to item store JSON file. When provided, fetched YouTube videos are converted to items and saved."
+        help="Path to item store JSON file. When provided, fetched items are saved."
     )
     
     # Recommend subcommand
