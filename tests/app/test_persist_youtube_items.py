@@ -118,7 +118,7 @@ title = "Test Channel"
     
     # Verify first item
     first_item = items[0]
-    assert first_item.item_id == "abc123def456"
+    assert first_item.item_id == "youtube:abc123def456"
     assert first_item.source_type == "youtube"
     assert first_item.source_url == "https://www.youtube.com/channel/UC1234567890"
     assert first_item.title == "First Video Title"
@@ -132,7 +132,7 @@ title = "Test Channel"
     
     # Verify second item
     second_item = items[1]
-    assert second_item.item_id == "xyz789uvw012"
+    assert second_item.item_id == "youtube:xyz789uvw012"
     assert second_item.source_type == "youtube"
     assert second_item.source_url == "https://www.youtube.com/channel/UC1234567890"
     assert second_item.title == "Second Video Title"
@@ -235,14 +235,14 @@ title = "RSS Feed"
     assert len(first_channel_items) == 2
     # Note: Items are sorted by published descending, then item_id ascending
     # Since both videos from the same channel have the same published time, they are sorted by item_id
-    assert first_channel_items[0].item_id == "abc123def456"
-    assert first_channel_items[1].item_id == "xyz789uvw012"
+    assert first_channel_items[0].item_id == "youtube:abc123def456"
+    assert first_channel_items[1].item_id == "youtube:xyz789uvw012"
     
     # Verify items from second channel
     second_channel_items = [item for item in items if item.source_url == "https://youtube.com/channel/UC0987654321/"]
     assert len(second_channel_items) == 2
-    assert second_channel_items[0].item_id == "uvw456xyz789"
-    assert second_channel_items[1].item_id == "stu012vwx345"
+    assert second_channel_items[0].item_id == "youtube:uvw456xyz789"
+    assert second_channel_items[1].item_id == "youtube:stu012vwx345"
 
 
 def test_fetch_and_persist_youtube_items_with_existing_items(tmp_path: Path) -> None:
@@ -279,7 +279,7 @@ title = "Test Channel"
             "published": now.replace(hour=8),
         },
         {
-            "item_id": "abc123def456",  # This ID will be overwritten
+            "item_id": "youtube:abc123def456",  # This ID will be overwritten
             "source_type": "youtube",
             "source_url": "https://www.youtube.com/channel/UC1234567890",
             "title": "Old Title",
@@ -309,7 +309,7 @@ title = "Test Channel"
     assert existing_item.published == now.replace(hour=8)
     
     # Verify the overwritten item
-    overwritten_item = next(item for item in items if item.item_id == "abc123def456")
+    overwritten_item = next(item for item in items if item.item_id == "youtube:abc123def456")
     assert overwritten_item.title == "First Video Title"
     assert overwritten_item.link == "https://www.youtube.com/watch?v=abc123def456"
     assert overwritten_item.published == datetime(2023, 12, 20, 9, 0, 0, tzinfo=timezone.utc)

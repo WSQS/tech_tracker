@@ -80,7 +80,7 @@ title = "Test Channel"
         youtube_url = "https://www.youtube.com/channel/UC1234567890"
         assert youtube_url in output_json1
         assert len(output_json1[youtube_url]) == 1
-        assert output_json1[youtube_url][0]["item_id"] == "abc123def456"
+        assert output_json1[youtube_url][0]["item_id"] == "youtube:abc123def456"
         
         # Verify default store file was created
         assert expected_store_path.exists()

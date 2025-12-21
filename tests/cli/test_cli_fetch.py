@@ -118,7 +118,7 @@ title = "Test Channel"
         
         # Check first item
         first_item = items[0]
-        assert first_item["item_id"] == "abc123def456"  # items have item_id, not video_id
+        assert first_item["item_id"] == "youtube:abc123def456"  # items have namespaced item_id
         assert first_item["title"] == "First Video Title"
         assert first_item["link"] == "https://www.youtube.com/watch?v=abc123def456"
         assert first_item["source_type"] == "youtube"
@@ -131,7 +131,7 @@ title = "Test Channel"
         
         # Check second item
         second_item = items[1]
-        assert second_item["item_id"] == "xyz789uvw012"  # items have item_id, not video_id
+        assert second_item["item_id"] == "youtube:xyz789uvw012"  # items have namespaced item_id
         assert second_item["title"] == "Second Video Title"
         assert second_item["link"] == "https://www.youtube.com/watch?v=xyz789uvw012"
         assert second_item["source_type"] == "youtube"

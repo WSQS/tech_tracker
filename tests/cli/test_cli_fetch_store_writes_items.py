@@ -90,7 +90,7 @@ title = "Test Channel"
         youtube_url = "https://www.youtube.com/channel/UC1234567890"
         assert youtube_url in output_json
         assert len(output_json[youtube_url]) == 1
-        assert output_json[youtube_url][0]["item_id"] == "abc123def456"  # items have item_id, not video_id
+        assert output_json[youtube_url][0]["item_id"] == "youtube:abc123def456"  # items have namespaced item_id
 
 
 def test_cli_fetch_with_store_creates_file_and_writes_items(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -135,7 +135,7 @@ title = "Test Channel"
         item = items[0]
         
         # Verify item fields
-        assert item.item_id == "abc123def456"  # video_id -> item_id
+        assert item.item_id == "youtube:abc123def456"  # video_id -> namespaced item_id
         assert item.source_type == "youtube"
         assert item.source_url == "https://www.youtube.com/channel/UC1234567890"
         assert item.title == "Test Video Title"
@@ -155,7 +155,7 @@ title = "Test Channel"
         youtube_url = "https://www.youtube.com/channel/UC1234567890"
         assert youtube_url in output_json
         assert len(output_json[youtube_url]) == 1
-        assert output_json[youtube_url][0]["item_id"] == "abc123def456"
+        assert output_json[youtube_url][0]["item_id"] == "youtube:abc123def456"
         
         # Verify stdout structure is items, not videos
         assert "video_id" not in output_json[youtube_url][0]  # items have item_id, not video_id
@@ -196,7 +196,7 @@ title = "Test Channel"
         youtube_url = "https://www.youtube.com/channel/UC1234567890"
         assert youtube_url in output_json1
         assert len(output_json1[youtube_url]) == 1
-        assert output_json1[youtube_url][0]["item_id"] == "abc123def456"
+        assert output_json1[youtube_url][0]["item_id"] == "youtube:abc123def456"
         
         # Second run - should output empty dict (no new items)
         result2 = main(["fetch", "--config", str(config_file), "--store", str(store_path)])

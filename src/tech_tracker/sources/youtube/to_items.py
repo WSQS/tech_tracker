@@ -3,6 +3,7 @@
 from typing import Any, Dict, List
 
 from tech_tracker.item import Item
+from tech_tracker.item_id import build_item_id, SOURCE_TYPE_YOUTUBE
 
 
 def youtube_videos_to_items(videos_by_source_url: Dict[str, List[Dict[str, Any]]]) -> List[Item]:
@@ -13,7 +14,7 @@ def youtube_videos_to_items(videos_by_source_url: Dict[str, List[Dict[str, Any]]
         
     Returns:
         List of Item objects with the following structure:
-        - item_id: str (video_id from YouTube)
+        - item_id: str (namespaced video_id, e.g., "youtube:abc123")
         - source_type: str (always "youtube")
         - source_url: str (the source URL from the input dict)
         - title: str (video title)
@@ -36,8 +37,8 @@ def youtube_videos_to_items(videos_by_source_url: Dict[str, List[Dict[str, Any]]
             
             # Create Item with mapped fields
             item = Item(
-                item_id=video_id,
-                source_type="youtube",
+                item_id=build_item_id(SOURCE_TYPE_YOUTUBE, video_id),
+                source_type=SOURCE_TYPE_YOUTUBE,
                 source_url=source_url,
                 title=title,
                 link=link,

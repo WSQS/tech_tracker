@@ -89,7 +89,7 @@ title = "Test Channel"
         youtube_url = "https://www.youtube.com/channel/UC1234567890"
         assert youtube_url in output_json
         assert len(output_json[youtube_url]) == 1
-        assert output_json[youtube_url][0]["item_id"] == "abc123def456"  # items have item_id, not video_id
+        assert output_json[youtube_url][0]["item_id"] == "youtube:abc123def456"  # items have namespaced item_id
         assert output_json[youtube_url][0]["title"] == "Test Video Title"
 
 
@@ -133,7 +133,7 @@ title = "Test Channel"
         youtube_url = "https://www.youtube.com/channel/UC1234567890"
         assert youtube_url in output_json
         assert len(output_json[youtube_url]) == 1
-        assert output_json[youtube_url][0]["item_id"] == "abc123def456"  # items have item_id
+        assert output_json[youtube_url][0]["item_id"] == "youtube:abc123def456"  # items have namespaced item_id
         assert output_json[youtube_url][0]["title"] == "Test Video Title"
 
 
@@ -190,7 +190,7 @@ title = "Test Channel"
     
     # Both should contain items (not videos)
     assert len(json_without_store[youtube_url]) == 1
-    assert json_without_store[youtube_url][0]["item_id"] == "abc123def456"
+    assert json_without_store[youtube_url][0]["item_id"] == "youtube:abc123def456"
     
     assert len(json_with_store[youtube_url]) == 1
-    assert json_with_store[youtube_url][0]["item_id"] == "abc123def456"
+    assert json_with_store[youtube_url][0]["item_id"] == "youtube:abc123def456"
