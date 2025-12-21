@@ -68,15 +68,24 @@ class LatestRecommender:
     def recommend(self, req: RecommendRequest) -> RecommendResult:
         """Recommend latest items sorted by published time.
         
+        Filters out seen items when unseen items are available.
+        Falls back to all items when all items are seen.
+        
         Args:
             req: Recommendation request.
             
         Returns:
             Recommendation result with latest items.
         """
+        # Filter unseen items
+        unseen_items = [item for item in req.items if not item.seen]
+        
+        # Use unseen items if available, otherwise use all items (fallback)
+        items_to_process = unseen_items if unseen_items else req.items
+        
         # Sort by published descending, then item_id ascending
         sorted_items = sorted(
-            req.items,
+            items_to_process,
             key=lambda item: (-item.published.timestamp(), item.item_id)
         )
         
@@ -87,6 +96,9 @@ class LatestRecommender:
         meta = {
             "strategy": "latest",
             "limit": req.limit,
+            "filtered": len(unseen_items) > 0,  # Whether filtering was applied
+            "total_items": len(req.items),
+            "unseen_items": len(unseen_items),
         }
         
         return RecommendResult(items=limited_items, meta=meta)
