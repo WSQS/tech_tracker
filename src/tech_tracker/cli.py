@@ -128,6 +128,48 @@ def handle_youtube_command(args: argparse.Namespace) -> int:
         return 1
 
 
+def handle_recommend_command(args: argparse.Namespace) -> int:
+    """Handle the 'recommend' subcommand.
+    
+    Args:
+        args: Parsed command-line arguments.
+        
+    Returns:
+        Exit code (0 for success, non-zero for error).
+    """
+    try:
+        # Import required modules
+        from tech_tracker.app.recommend import LatestRecommender, recommend_from_store, render_recommendation_markdown
+        from tech_tracker.item_store import JsonItemStore
+        from pathlib import Path
+        
+        # Use default store path
+        store_path = default_store_path()
+        store = JsonItemStore(store_path)
+        
+        # Use default recommender
+        recommender = LatestRecommender()
+        
+        # Generate recommendations
+        result = recommend_from_store(store, recommender)
+        
+        # Render to Markdown
+        markdown_content = render_recommendation_markdown(result)
+        
+        # Write to current working directory
+        output_file = Path.cwd() / "recommend.md"
+        output_file.write_text(markdown_content, encoding="utf-8")
+        
+        # Output brief message to stdout
+        print(f"Written to {output_file}")
+        
+        return 0
+        
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     """Main CLI entry point.
     
@@ -161,12 +203,20 @@ def main(argv: list[str] | None = None) -> int:
         help="Path to item store JSON file. When provided, fetched YouTube videos are converted to items and saved."
     )
     
+    # Recommend subcommand
+    recommend_parser = subparsers.add_parser(
+        "recommend",
+        help="Generate recommendations from stored items and save as Markdown"
+    )
+    
     # Parse arguments
     args = parser.parse_args(argv)
     
     # Handle commands
     if args.command == "youtube":
         return handle_youtube_command(args)
+    elif args.command == "recommend":
+        return handle_recommend_command(args)
     else:
         parser.print_help()
         return 1
