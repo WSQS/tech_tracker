@@ -1,3 +1,14 @@
 [[sources]]
 type = "youtube"
 url = "https://www.youtube.com/channel/UCEbYhDd6c6vngsF5PQpFVWg"
+title = "Tsoding"
+
+[[sources]]
+type = "youtube"
+url = "https://www.youtube.com/channel/UCrqM0Ym_NbK1fqeQG2VIohg"
+title = "Tsoding Daily"
+
+[[sources]]
+type = "youtube"
+url = "https://www.youtube.com/channel/UCMlGfpWw-RUdWX_JbLCukXg"
+title = "CppCon"
