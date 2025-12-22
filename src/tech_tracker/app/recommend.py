@@ -203,8 +203,11 @@ class KeywordFromSeenRecommender:
         scored_items = []
         for item in candidate_items:
             tokens = tokenize_title(item.title)
-            # Score = sum of keyword weights for tokens that appear in seen keywords
-            score = sum(keyword_counts[token] for token in tokens if token in keyword_counts)
+            # Deduplicate tokens within the same title before scoring
+            # This ensures a token appearing multiple times in one title only contributes once
+            unique_tokens = set(tokens)
+            # Score = sum of keyword weights for unique tokens that appear in seen keywords
+            score = sum(keyword_counts[token] for token in unique_tokens if token in keyword_counts)
             scored_items.append((item, score))
         
         # Sort by score (desc), published (desc), item_id (asc)

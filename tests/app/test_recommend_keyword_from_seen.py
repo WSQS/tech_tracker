@@ -323,3 +323,87 @@ def test_empty_items_list():
     """Test behavior with empty items list."""
     result = recommend_keyword_from_seen([])
     assert len(result) == 0
+
+
+def test_recommend_keyword_from_seen_deduplicate_tokens():
+    """Test that duplicate tokens within a title are only counted once."""
+    # Create seen items with specific keyword weights
+    seen_item1 = Item(
+        item_id="seen:python1",
+        source_type="youtube",
+        source_url="https://youtube.com/channel/python",
+        title="Python Programming Tutorial",
+        link="https://youtube.com/watch?v=python1",
+        published=datetime(2023, 12, 20, 10, 0, 0, tzinfo=timezone.utc),
+        seen=True
+    )
+    seen_item2 = Item(
+        item_id="seen:async1",
+        source_type="youtube",
+        source_url="https://youtube.com/channel/async",
+        title="Async Programming Guide",
+        link="https://youtube.com/watch?v=async1",
+        published=datetime(2023, 12, 21, 10, 0, 0, tzinfo=timezone.utc),
+        seen=True
+    )
+    
+    # Create unseen items with duplicate tokens
+    # "python python async" - python appears twice, should only count once
+    unseen_item1 = Item(
+        item_id="unseen:duplicate_python",
+        source_type="youtube",
+        source_url="https://youtube.com/channel/duplicate",
+        title="python python async",  # python appears twice
+        link="https://youtube.com/watch?v=duplicate",
+        published=datetime(2023, 12, 22, 10, 0, 0, tzinfo=timezone.utc),
+        seen=False
+    )
+    # "async async python" - async appears twice, should only count once
+    unseen_item2 = Item(
+        item_id="unseen:duplicate_async",
+        source_type="youtube",
+        source_url="https://youtube.com/channel/duplicate2",
+        title="async async python",  # async appears twice
+        link="https://youtube.com/watch?v=duplicate2",
+        published=datetime(2023, 12, 23, 10, 0, 0, tzinfo=timezone.utc),
+        seen=False
+    )
+    # "python async" - no duplicates
+    unseen_item3 = Item(
+        item_id="unseen:no_duplicates",
+        source_type="youtube",
+        source_url="https://youtube.com/channel/normal",
+        title="python async",  # no duplicates
+        link="https://youtube.com/watch?v=normal",
+        published=datetime(2023, 12, 24, 10, 0, 0, tzinfo=timezone.utc),
+        seen=False
+    )
+    
+    items = [seen_item1, seen_item2, unseen_item1, unseen_item2, unseen_item3]
+    
+    # Get recommendations
+    result = recommend_keyword_from_seen(items, limit=10)
+    
+    # Expected keyword weights from seen items:
+    # "python": 1 (from "Python Programming Tutorial")
+    # "programming": 1 (from "Python Programming Tutorial") 
+    # "tutorial": 1 (from "Python Programming Tutorial")
+    # "async": 1 (from "Async Programming Guide")
+    # "guide": 1 (from "Async Programming Guide")
+    
+    # Expected scores (with deduplication):
+    # unseen_item1 ("python python async"): python(1) + async(1) = 2
+    # unseen_item2 ("async async python"): async(1) + python(1) = 2  
+    # unseen_item3 ("python async"): python(1) + async(1) = 2
+    
+    # All three items should have the same score (2), so sorting should be by published desc
+    assert len(result) == 3
+    
+    # Check ordering by published time (newest first)
+    assert result[0].item_id == "unseen:no_duplicates"  # 2023-12-24 (newest)
+    assert result[1].item_id == "unseen:duplicate_async"  # 2023-12-23  
+    assert result[2].item_id == "unseen:duplicate_python"  # 2023-12-22 (oldest)
+    
+    # Verify that all items have the same score (2) by checking their relative ordering
+    # Since scores are equal, they should be sorted by published time descending
+    assert result[0].published > result[1].published > result[2].published
