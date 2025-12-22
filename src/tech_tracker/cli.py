@@ -158,7 +158,13 @@ def handle_recommend_command(args: argparse.Namespace) -> int:
     """
     try:
         # Import required modules
-        from tech_tracker.app.recommend import LatestRecommender, recommend_from_store, render_recommendation_markdown
+        from tech_tracker.app.recommend import (
+            LatestRecommender, 
+            KeywordFromSeenRecommender,
+            recommend_from_store, 
+            render_recommendation_markdown,
+            render_multi_recommendation_markdown
+        )
         from tech_tracker.item_store import JsonItemStore
         from pathlib import Path
         
@@ -166,14 +172,19 @@ def handle_recommend_command(args: argparse.Namespace) -> int:
         store_path = default_store_path()
         store = JsonItemStore(store_path)
         
-        # Use default recommender
-        recommender = LatestRecommender()
+        # Generate recommendations from both recommenders
+        latest_recommender = LatestRecommender()
+        keyword_recommender = KeywordFromSeenRecommender()
         
-        # Generate recommendations
-        result = recommend_from_store(store, recommender)
+        latest_result = recommend_from_store(store, latest_recommender)
+        keyword_result = recommend_from_store(store, keyword_recommender)
         
-        # Render to Markdown
-        markdown_content = render_recommendation_markdown(result)
+        # Render multi-section markdown
+        sections = [
+            ("Latest", latest_result),
+            ("Keyword from Seen", keyword_result)
+        ]
+        markdown_content = render_multi_recommendation_markdown(sections)
         
         # Write to current working directory
         output_file = Path.cwd() / "recommend.md"
