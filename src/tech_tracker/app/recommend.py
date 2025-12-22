@@ -190,13 +190,7 @@ def render_recommendation_markdown(result: RecommendResult) -> str:
     
     lines = []
     
-    # 1) First line: "# Recommended Items"
-    lines.append("# Recommended Items")
-    
-    # 2) Second line: empty line
-    lines.append("")
-    
-    # 3) Meta information (strategy and limit only)
+    # 1) Meta information (strategy and limit only)
     if result.meta:
         if "strategy" in result.meta:
             lines.append(f"_Strategy_: {result.meta['strategy']}")
@@ -206,7 +200,7 @@ def render_recommendation_markdown(result: RecommendResult) -> str:
         if "strategy" in result.meta or "limit" in result.meta:
             lines.append("")
     
-    # 4) Items sections
+    # 2) Items sections
     for index, item in enumerate(result.items, 1):
         # Section title
         lines.append(f"## {index}. {item.title}")
@@ -224,7 +218,10 @@ def render_recommendation_markdown(result: RecommendResult) -> str:
         # Empty line after each item section
         lines.append("")
     
-    # Join with newlines and ensure trailing newline
+    # Join with newlines and ensure trailing newline if there's content
+    if not lines:
+        return ""
+    
     result = "\n".join(lines)
     if not result.endswith("\n\n"):
         result += "\n"

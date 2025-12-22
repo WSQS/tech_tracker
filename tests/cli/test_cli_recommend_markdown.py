@@ -75,7 +75,7 @@ def test_cli_recommend_with_items(tmp_path: Path, capsys: pytest.CaptureFixture[
         # Verify stdout contains only the write message, not the Markdown content
         assert "Written to" in captured.out
         assert "recommend.md" in captured.out
-        assert "# Recommended Items" not in captured.out
+        assert "## " not in captured.out
         
         # Verify output file was created
         assert output_file.exists()
@@ -83,8 +83,8 @@ def test_cli_recommend_with_items(tmp_path: Path, capsys: pytest.CaptureFixture[
         # Read and verify Markdown content
         markdown_content = output_file.read_text(encoding="utf-8")
         
-        # Verify Markdown structure contains header
-        assert "# Recommended Items" in markdown_content
+        # Verify Markdown structure contains item sections
+        assert "## " in markdown_content
         
         # Extract titles from markdown and verify order matches recommender output
         title_lines = [line for line in markdown_content.split('\n') if line.startswith("## ")]
@@ -148,17 +148,20 @@ def test_cli_recommend_with_empty_store(tmp_path: Path, capsys: pytest.CaptureFi
         # Verify stdout contains only the write message
         assert "Written to" in captured.out
         assert "recommend.md" in captured.out
-        assert "# Recommended Items" not in captured.out
+        assert "## " not in captured.out
         
         # Verify output file was created
         assert output_file.exists()
         
-        # Read and verify Markdown content contains header even when empty
+        # Read and verify Markdown content contains meta when no items
         markdown_content = output_file.read_text(encoding="utf-8")
-        assert "# Recommended Items" in markdown_content
+        
+        # Should contain meta information
+        assert "_Strategy_: latest" in markdown_content
+        assert "_Limit_: 20" in markdown_content
         
         # Should not contain any item sections
-        assert "## " not in markdown_content or markdown_content.count("## ") == 0
+        assert "## " not in markdown_content
 
 
 def test_cli_recommend_overwrites_existing_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -197,7 +200,7 @@ def test_cli_recommend_overwrites_existing_file(tmp_path: Path, capsys: pytest.C
         # Verify file was overwritten
         markdown_content = output_file.read_text(encoding="utf-8")
         assert "Existing content that should be overwritten" not in markdown_content
-        assert "# Recommended Items" in markdown_content
+        assert "## " in markdown_content
         
         # Verify the expected title appears in markdown (without hardcoded numbering)
         assert "New Video" in markdown_content

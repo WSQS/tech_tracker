@@ -7,12 +7,12 @@ from tech_tracker.item import Item
 
 
 def test_render_empty_recommendation() -> None:
-    """Test a) items empty, meta empty: only output '# Recommended Items\n\n'."""
+    """Test a) items empty, meta empty: only output empty string."""
     result = RecommendResult(items=[], meta={})
     
     markdown = render_recommendation_markdown(result)
     
-    expected = "# Recommended Items\n\n"
+    expected = ""
     assert markdown == expected
 
 
@@ -41,9 +41,7 @@ def test_render_single_item_with_meta() -> None:
     
     markdown = render_recommendation_markdown(result)
     
-    expected = """# Recommended Items
-
-_Strategy_: latest
+    expected = """_Strategy_: latest
 _Limit_: 5
 
 ## 1. Test Video Title
@@ -85,9 +83,7 @@ def test_render_two_items_ordering() -> None:
     
     markdown = render_recommendation_markdown(result)
     
-    expected = """# Recommended Items
-
-## 1. First Video
+    expected = """## 1. First Video
 - ID: `item1`
 - Source: youtube
 - Channel: https://youtube.com/channel/channel1
@@ -123,9 +119,7 @@ def test_render_microseconds_in_published_time() -> None:
     
     markdown = render_recommendation_markdown(result)
     
-    expected = """# Recommended Items
-
-## 1. Microsecond Video
+    expected = """## 1. Microsecond Video
 - ID: `micro123`
 - Source: youtube
 - Channel: https://youtube.com/channel/micro
@@ -154,9 +148,7 @@ def test_render_partial_meta() -> None:
     result_strategy = RecommendResult(items=[item], meta={"strategy": "latest"})
     markdown_strategy = render_recommendation_markdown(result_strategy)
     
-    expected_strategy = """# Recommended Items
-
-_Strategy_: latest
+    expected_strategy = """_Strategy_: latest
 
 ## 1. Partial Meta Video
 - ID: `partial123`
@@ -173,9 +165,7 @@ _Strategy_: latest
     result_limit = RecommendResult(items=[item], meta={"limit": 10})
     markdown_limit = render_recommendation_markdown(result_limit)
     
-    expected_limit = """# Recommended Items
-
-_Limit_: 10
+    expected_limit = """_Limit_: 10
 
 ## 1. Partial Meta Video
 - ID: `partial123`
