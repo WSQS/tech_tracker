@@ -314,3 +314,173 @@ def test_latest_recommender_mixed_seen_with_limit() -> None:
     assert result.meta["total_items"] == 3
     assert result.meta["unseen_items"] == 2
     assert result.meta["limit"] == 1
+
+
+def test_keyword_from_seen_recommender_name() -> None:
+    """Test a) KeywordFromSeenRecommender.name == "keyword_from_seen"."""
+    from tech_tracker.app.recommend import KeywordFromSeenRecommender
+    
+    recommender = KeywordFromSeenRecommender()
+    assert recommender.name == "keyword_from_seen"
+
+
+def test_keyword_from_seen_recommender_returns_recommend_result() -> None:
+    """Test b) recommend returns RecommendResult, and result.items is list[Item]."""
+    from tech_tracker.app.recommend import KeywordFromSeenRecommender
+    
+    recommender = KeywordFromSeenRecommender()
+    
+    # Create test items
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
+    items = [
+        Item(
+            item_id="youtube:seen1",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/1",
+            title="Python Programming Tutorial",
+            link="https://youtube.com/watch?v=seen1",
+            published=now,
+            seen=True
+        ),
+        Item(
+            item_id="youtube:unseen1",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/2",
+            title="Advanced Python Guide",
+            link="https://youtube.com/watch?v=unseen1",
+            published=datetime(2023, 12, 21, 15, 0, 0, tzinfo=timezone.utc),
+            seen=False
+        ),
+        Item(
+            item_id="youtube:unseen2",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/3",
+            title="JavaScript Basics",
+            link="https://youtube.com/watch?v=unseen2",
+            published=datetime(2023, 12, 22, 15, 0, 0, tzinfo=timezone.utc),
+            seen=False
+        ),
+    ]
+    
+    # Create request
+    req = RecommendRequest(items=items, limit=20)
+    
+    # Get recommendation
+    result = recommender.recommend(req)
+    
+    # Verify result structure
+    assert isinstance(result, RecommendResult)
+    assert isinstance(result.items, list)
+    assert all(isinstance(item, Item) for item in result.items)
+    
+    # Verify content - should recommend unseen items with matching keywords
+    assert len(result.items) == 2
+    assert result.items[0].item_id == "youtube:unseen1"  # Python Guide (matches "python")
+    assert result.items[1].item_id == "youtube:unseen2"  # JavaScript (no matching keywords, score=0)
+
+
+def test_keyword_from_seen_recommender_meta_contains_recommender_info() -> None:
+    """Test c) meta contains recommender information."""
+    from tech_tracker.app.recommend import KeywordFromSeenRecommender
+    
+    recommender = KeywordFromSeenRecommender()
+    
+    # Create test items
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
+    items = [
+        Item(
+            item_id="youtube:seen1",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/1",
+            title="Python Programming",
+            link="https://youtube.com/watch?v=seen1",
+            published=now,
+            seen=True
+        ),
+        Item(
+            item_id="youtube:unseen1",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/2",
+            title="Python Tutorial",
+            link="https://youtube.com/watch?v=unseen1",
+            published=datetime(2023, 12, 21, 15, 0, 0, tzinfo=timezone.utc),
+            seen=False
+        ),
+    ]
+    
+    # Create request
+    req = RecommendRequest(items=items, limit=10)
+    
+    # Get recommendation
+    result = recommender.recommend(req)
+    
+    # Verify meta contains recommender information
+    assert isinstance(result.meta, dict)
+    assert "strategy" in result.meta
+    assert result.meta["strategy"] == "keyword_from_seen"
+    assert "limit" in result.meta
+    assert result.meta["limit"] == 10
+    assert "total_items" in result.meta
+    assert result.meta["total_items"] == 2
+
+
+def test_keyword_from_seen_recommender_consistency_with_pure_function() -> None:
+    """Test that recommender output matches pure function output."""
+    from tech_tracker.app.recommend import KeywordFromSeenRecommender, recommend_keyword_from_seen
+    
+    recommender = KeywordFromSeenRecommender()
+    
+    # Create test items
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
+    items = [
+        Item(
+            item_id="youtube:seen1",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/1",
+            title="Python Programming Tutorial",
+            link="https://youtube.com/watch?v=seen1",
+            published=now,
+            seen=True
+        ),
+        Item(
+            item_id="youtube:seen2",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/2",
+            title="JavaScript Guide",
+            link="https://youtube.com/watch?v=seen2",
+            published=datetime(2023, 12, 21, 15, 0, 0, tzinfo=timezone.utc),
+            seen=True
+        ),
+        Item(
+            item_id="youtube:unseen1",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/3",
+            title="Python Advanced",
+            link="https://youtube.com/watch?v=unseen1",
+            published=datetime(2023, 12, 22, 15, 0, 0, tzinfo=timezone.utc),
+            seen=False
+        ),
+        Item(
+            item_id="youtube:unseen2",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/4",
+            title="JavaScript Tutorial",
+            link="https://youtube.com/watch?v=unseen2",
+            published=datetime(2023, 12, 23, 15, 0, 0, tzinfo=timezone.utc),
+            seen=False
+        ),
+    ]
+    
+    # Get output from pure function
+    pure_function_result = recommend_keyword_from_seen(items, limit=20)
+    
+    # Get output from recommender
+    req = RecommendRequest(items=items, limit=20)
+    recommender_result = recommender.recommend(req)
+    
+    # Verify they are equivalent
+    assert len(pure_function_result) == len(recommender_result.items)
+    for pure_item, recommender_item in zip(pure_function_result, recommender_result.items):
+        assert pure_item.item_id == recommender_item.item_id
+        assert pure_item.title == recommender_item.title
+        assert pure_item.seen == recommender_item.seen

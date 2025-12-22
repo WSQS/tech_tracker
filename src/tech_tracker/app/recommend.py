@@ -104,6 +104,42 @@ class LatestRecommender:
         return RecommendResult(items=limited_items, meta=meta)
 
 
+class KeywordFromSeenRecommender:
+    """Recommender that suggests items based on keywords from seen items."""
+    
+    def __init__(self) -> None:
+        """Initialize the KeywordFromSeenRecommender."""
+        pass
+    
+    @property
+    def name(self) -> str:
+        """Get the name of the recommender."""
+        return "keyword_from_seen"
+    
+    def recommend(self, req: RecommendRequest) -> RecommendResult:
+        """Recommend items based on keywords extracted from seen items.
+        
+        Uses the recommend_keyword_from_seen pure function for the core logic.
+        
+        Args:
+            req: Recommendation request containing items and parameters.
+            
+        Returns:
+            Recommendation result with keyword-based suggestions.
+        """
+        # Use the pure function for core recommendation logic
+        recommended_items = recommend_keyword_from_seen(req.items, req.limit)
+        
+        # Create result with metadata
+        meta = {
+            "strategy": "keyword_from_seen",
+            "limit": req.limit,
+            "total_items": len(req.items),
+        }
+        
+        return RecommendResult(items=recommended_items, meta=meta)
+
+
 def recommend_from_store(
     store: "JsonItemStore",
     recommender: Recommender,
