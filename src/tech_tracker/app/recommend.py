@@ -193,3 +193,80 @@ def render_recommendation_markdown(result: RecommendResult) -> str:
     if not result.endswith("\n\n"):
         result += "\n"
     return result
+
+
+def recommend_keyword_from_seen(
+    items: List[Item],
+    limit: int = 20
+) -> List[Item]:
+    """Recommend items based on keywords extracted from seen items.
+    
+    This pure function implements keyword-based recommendation:
+    1. Extract keywords from seen items' titles
+    2. Calculate keyword weights based on frequency
+    3. Score candidate items based on keyword overlap
+    4. Sort by score (desc), published (desc), item_id (asc)
+    5. Apply limit
+    
+    Args:
+        items: List of items to recommend from.
+        limit: Maximum number of items to recommend (default: 20).
+        
+    Returns:
+        List of recommended items sorted by relevance.
+    """
+    from collections import Counter
+    import re
+    
+    # Helper function to tokenize title
+    def tokenize_title(title: str) -> List[str]:
+        """Split title into tokens by non-alphanumeric characters.
+        
+        Args:
+            title: The title string to tokenize.
+            
+        Returns:
+            List of lowercase tokens, with empty strings filtered out.
+        """
+        # Split by non-alphanumeric characters
+        tokens = re.split(r'[^a-zA-Z0-9]', title)
+        # Convert to lowercase and filter out empty strings
+        return [token.lower() for token in tokens if token]
+    
+    # 1. Extract keywords from seen items
+    seen_items = [item for item in items if item.seen]
+    keyword_counts = Counter()
+    
+    for item in seen_items:
+        tokens = tokenize_title(item.title)
+        keyword_counts.update(tokens)
+    
+    # If no seen items, return empty list
+    if not keyword_counts:
+        return []
+    
+    # 2. Determine candidate items
+    unseen_items = [item for item in items if not item.seen]
+    candidate_items = unseen_items if unseen_items else items
+    
+    # 3. Score candidate items
+    scored_items = []
+    for item in candidate_items:
+        tokens = tokenize_title(item.title)
+        # Score = sum of keyword weights for tokens that appear in seen keywords
+        score = sum(keyword_counts[token] for token in tokens if token in keyword_counts)
+        scored_items.append((item, score))
+    
+    # 4. Sort by score (desc), published (desc), item_id (asc)
+    scored_items.sort(
+        key=lambda x: (
+            -x[1],  # score descending
+            -x[0].published.timestamp(),  # published descending
+            x[0].item_id  # item_id ascending
+        )
+    )
+    
+    # 5. Apply limit
+    recommended_items = [item for item, score in scored_items[:limit]]
+    
+    return recommended_items
