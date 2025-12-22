@@ -228,6 +228,69 @@ def render_recommendation_markdown(result: RecommendResult) -> str:
     return result
 
 
+def render_multi_recommendation_markdown(
+    sections: List[tuple[str, RecommendResult]]
+) -> str:
+    """Render multiple recommendation results as a single Markdown with sections.
+    
+    Args:
+        sections: List of tuples containing (section_title, RecommendResult).
+                 Sections are rendered in the order provided.
+        
+    Returns:
+        Markdown string with main title and multiple sections.
+        
+    Example:
+        >>> sections = [
+        ...     ("Latest", latest_result),
+        ...     ("Keyword from Seen", keyword_result)
+        ... ]
+        >>> markdown = render_multi_recommendation_markdown(sections)
+    """
+    lines = []
+    
+    # 1) Main title
+    lines.append("# Recommended Items")
+    
+    # 2) Empty line after main title
+    lines.append("")
+    
+    # 3) Render each section
+    for section_title, result in sections:
+        # Section title (level 2 heading)
+        lines.append(f"## {section_title}")
+        
+        # Empty line after section title
+        lines.append("")
+        
+        # Section body using existing renderer
+        section_body = render_recommendation_markdown(result)
+        
+        # Add section body if not empty
+        if section_body:
+            # Split body into lines and add each line
+            body_lines = section_body.split("\n")
+            for body_line in body_lines:
+                if body_line:  # Skip empty lines to avoid extra spacing
+                    lines.append(body_line)
+                else:
+                    lines.append("")  # Preserve intentional empty lines
+        
+        # Add empty line between sections (except after last section)
+        lines.append("")
+    
+    # Remove the last empty line to avoid trailing extra spacing
+    if lines and lines[-1] == "":
+        lines.pop()
+    
+    # Join with newlines and ensure trailing newline
+    result = "\n".join(lines)
+    if not result.endswith("\n"):
+        result += "\n"
+    
+    return result
+
+
 def recommend_keyword_from_seen(
     items: List[Item],
     limit: int = 20
