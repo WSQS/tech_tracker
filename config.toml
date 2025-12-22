@@ -12,3 +12,13 @@ title = "Tsoding Daily"
 type = "youtube"
 url = "https://www.youtube.com/channel/UCMlGfpWw-RUdWX_JbLCukXg"
 title = "CppCon"
+
+[[sources]]
+type = "youtube"
+url = "https://www.youtube.com/channel/UCJhay24LTpO1s4bIZxuIqKw"
+title = "ACCU Conference"
+
+[[sources]]
+type = "youtube"
+url = "https://www.youtube.com/channel/UCAczr0j6ZuiVaiGFZ4qxApw"
+title = "cpponsea"
