@@ -484,3 +484,225 @@ def test_keyword_from_seen_recommender_consistency_with_pure_function() -> None:
         assert pure_item.item_id == recommender_item.item_id
         assert pure_item.title == recommender_item.title
         assert pure_item.seen == recommender_item.seen
+
+
+def test_keyword_from_seen_recommender_top_keywords_meta() -> None:
+    """Test that KeywordFromSeenRecommender includes top_keywords in meta."""
+    from tech_tracker.app.recommend import KeywordFromSeenRecommender
+    
+    recommender = KeywordFromSeenRecommender()
+    
+    # Create test items with seen items containing various keywords
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
+    items = [
+        Item(
+            item_id="seen1",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/1",
+            title="Python Programming Tutorial",
+            link="https://youtube.com/watch?v=seen1",
+            published=now,
+            seen=True
+        ),
+        Item(
+            item_id="seen2",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/2",
+            title="Advanced Python Guide",
+            link="https://youtube.com/watch?v=seen2",
+            published=datetime(2023, 12, 21, 15, 0, 0, tzinfo=timezone.utc),
+            seen=True
+        ),
+        Item(
+            item_id="seen3",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/3",
+            title="JavaScript Basics Tutorial",
+            link="https://youtube.com/watch?v=seen3",
+            published=datetime(2023, 12, 22, 15, 0, 0, tzinfo=timezone.utc),
+            seen=True
+        ),
+        Item(
+            item_id="unseen1",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/4",
+            title="Python Advanced Techniques",
+            link="https://youtube.com/watch?v=unseen1",
+            published=datetime(2023, 12, 23, 15, 0, 0, tzinfo=timezone.utc),
+            seen=False
+        ),
+    ]
+    
+    # Create request
+    req = RecommendRequest(items=items, limit=20)
+    
+    # Get recommendation
+    result = recommender.recommend(req)
+    
+    # Verify top_keywords field exists in meta
+    assert "top_keywords" in result.meta
+    assert isinstance(result.meta["top_keywords"], list)
+    
+    # Verify keyword weights and sorting
+    top_keywords = result.meta["top_keywords"]
+        
+        # Expected keywords and their counts (only from seen items):
+    # "python": 2 (from "Python Programming Tutorial", "Advanced Python Guide")
+    # "tutorial": 2 (from "Python Programming Tutorial", "JavaScript Basics Tutorial") 
+    # "advanced": 1 (from "Advanced Python Guide")
+    # "guide": 1, "programming": 1, "javascript": 1, "basics": 1
+    
+    # Verify the top keywords are correctly sorted by weight desc, then keyword asc
+    expected_keywords = [
+        ("python", 2),
+        ("tutorial", 2),  # Same weight as "python", but "tutorial" comes after "python" alphabetically
+        ("advanced", 1),
+        ("basics", 1),
+        ("guide", 1),
+        ("javascript", 1),
+        ("programming", 1),
+    ]
+    
+    assert len(top_keywords) == len(expected_keywords)
+    assert top_keywords == expected_keywords
+
+
+def test_keyword_from_seen_recommender_top_keywords_no_seen_items() -> None:
+    """Test top_keywords when no seen items exist."""
+    from tech_tracker.app.recommend import KeywordFromSeenRecommender
+    
+    recommender = KeywordFromSeenRecommender()
+    
+    # Create test items with no seen items
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
+    items = [
+        Item(
+            item_id="unseen1",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/1",
+            title="Python Programming Tutorial",
+            link="https://youtube.com/watch?v=unseen1",
+            published=now,
+            seen=False
+        ),
+        Item(
+            item_id="unseen2",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/2",
+            title="JavaScript Basics",
+            link="https://youtube.com/watch?v=unseen2",
+            published=datetime(2023, 12, 21, 15, 0, 0, tzinfo=timezone.utc),
+            seen=False
+        ),
+    ]
+    
+    # Create request
+    req = RecommendRequest(items=items, limit=20)
+    
+    # Get recommendation
+    result = recommender.recommend(req)
+    
+    # Verify top_keywords field exists and is empty list
+    assert "top_keywords" in result.meta
+    assert result.meta["top_keywords"] == []
+
+
+def test_keyword_from_seen_recommender_top_keywords_empty_titles() -> None:
+    """Test top_keywords when seen items have empty or non-tokenizable titles."""
+    from tech_tracker.app.recommend import KeywordFromSeenRecommender
+    
+    recommender = KeywordFromSeenRecommender()
+    
+    # Create test items with seen items having empty titles or only punctuation
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
+    items = [
+        Item(
+            item_id="seen1",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/1",
+            title="!!!",  # Only punctuation, no tokens
+            link="https://youtube.com/watch?v=seen1",
+            published=now,
+            seen=True
+        ),
+        Item(
+            item_id="seen2",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/2",
+            title="",  # Empty title
+            link="https://youtube.com/watch?v=seen2",
+            published=datetime(2023, 12, 21, 15, 0, 0, tzinfo=timezone.utc),
+            seen=True
+        ),
+        Item(
+            item_id="unseen1",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/3",
+            title="Python Tutorial",
+            link="https://youtube.com/watch?v=unseen1",
+            published=datetime(2023, 12, 22, 15, 0, 0, tzinfo=timezone.utc),
+            seen=False
+        ),
+    ]
+    
+    # Create request
+    req = RecommendRequest(items=items, limit=20)
+    
+    # Get recommendation
+    result = recommender.recommend(req)
+    
+    # Verify top_keywords field exists and is empty list (no extractable keywords)
+    assert "top_keywords" in result.meta
+    assert result.meta["top_keywords"] == []
+
+
+def test_keyword_from_seen_recommender_top_keywords_tie_break_alphabetical() -> None:
+    """Test that keywords with same weight are sorted alphabetically."""
+    from tech_tracker.app.recommend import KeywordFromSeenRecommender
+    
+    recommender = KeywordFromSeenRecommender()
+    
+    # Create test items designed to create ties
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
+    items = [
+        Item(
+            item_id="seen1",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/1",
+            title="zebra apple banana",  # Creates zebra, apple, banana each with count 1
+            link="https://youtube.com/watch?v=seen1",
+            published=now,
+            seen=True
+        ),
+        Item(
+            item_id="seen2", 
+            source_type="youtube",
+            source_url="https://youtube.com/channel/2",
+            title="cherry dog",  # Creates cherry, dog each with count 1
+            link="https://youtube.com/watch?v=seen2",
+            published=datetime(2023, 12, 21, 15, 0, 0, tzinfo=timezone.utc),
+            seen=True
+        ),
+    ]
+    
+    # Create request
+    req = RecommendRequest(items=items, limit=20)
+    
+    # Get recommendation
+    result = recommender.recommend(req)
+    
+    # Verify top_keywords field exists
+    assert "top_keywords" in result.meta
+    top_keywords = result.meta["top_keywords"]
+    
+    # All keywords have weight 1, should be sorted alphabetically
+    expected_keywords = [
+        ("apple", 1),
+        ("banana", 1),
+        ("cherry", 1),
+        ("dog", 1),
+        ("zebra", 1),
+    ]
+    
+    assert len(top_keywords) == len(expected_keywords)
+    assert top_keywords == expected_keywords

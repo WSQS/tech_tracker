@@ -130,14 +130,57 @@ class KeywordFromSeenRecommender:
         # Use the pure function for core recommendation logic
         recommended_items = recommend_keyword_from_seen(req.items, req.limit)
         
+        # Extract top keywords for explainability
+        top_keywords = self._extract_top_keywords(req.items)
+        
         # Create result with metadata
         meta = {
             "strategy": "keyword_from_seen",
             "limit": req.limit,
             "total_items": len(req.items),
+            "top_keywords": top_keywords,
         }
         
         return RecommendResult(items=recommended_items, meta=meta)
+    
+    def _extract_top_keywords(self, items: List[Item]) -> List[tuple[str, int]]:
+        """Extract top keywords from seen items with their weights.
+        
+        Args:
+            items: List of items to extract keywords from.
+            
+        Returns:
+            List of (keyword, weight) tuples sorted by weight desc, then keyword asc.
+            Returns empty list if no seen items or no keywords found.
+        """
+        from collections import Counter
+        import re
+        
+        # Helper function to tokenize title (same as in pure function)
+        def tokenize_title(title: str) -> List[str]:
+            """Split title into tokens by non-alphanumeric characters."""
+            tokens = re.split(r'[^a-zA-Z0-9]', title)
+            return [token.lower() for token in tokens if token]
+        
+        # Extract keywords from seen items
+        seen_items = [item for item in items if item.seen]
+        keyword_counts = Counter()
+        
+        for item in seen_items:
+            tokens = tokenize_title(item.title)
+            keyword_counts.update(tokens)
+        
+        # If no keywords found, return empty list
+        if not keyword_counts:
+            return []
+        
+        # Sort by weight desc, then keyword asc for deterministic ordering
+        sorted_keywords = sorted(
+            keyword_counts.items(),
+            key=lambda x: (-x[1], x[0])
+        )
+        
+        return sorted_keywords
 
 
 def recommend_from_store(
