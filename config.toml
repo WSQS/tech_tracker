@@ -32,3 +32,8 @@ title = "C++ Weekly With Jason Turner"
 type = "youtube"
 url = "https://www.youtube.com/channel/UC5e__RG9K3cHrPotPABnrwg"
 title = "CppNow"
+
+[[sources]]
+type = "youtube"
+url = "https://www.youtube.com/channel/UC1kBxkk2bcG78YBX7LMl9pQ"
+title = "code_report"
