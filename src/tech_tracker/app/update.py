@@ -47,7 +47,7 @@ def fetch_youtube_new_items(
     added_items = diff_new_items(old_items, new_items)
     
     # 5) Save all fetched items to store (not just new ones)
-    store.save_many(new_items)
+    store.save_many(added_items)
     
     # 6) Return only the new items
     return added_items
