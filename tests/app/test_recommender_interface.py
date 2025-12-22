@@ -486,6 +486,101 @@ def test_keyword_from_seen_recommender_consistency_with_pure_function() -> None:
         assert pure_item.seen == recommender_item.seen
 
 
+def test_keyword_from_seen_recommender_token_plus_support() -> None:
+    """Test that tokenizer supports + sign within tokens like 'c++' and 'g++'."""
+    from tech_tracker.app.recommend import KeywordFromSeenRecommender
+    
+    recommender = KeywordFromSeenRecommender()
+    
+    # Create test items with seen items containing + signs
+    now = datetime(2023, 12, 20, 15, 0, 0, tzinfo=timezone.utc)
+    items = [
+        Item(
+            item_id="seen:csharp",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/csharp",
+            title="C# Programming Tutorial",
+            link="https://youtube.com/watch?v=csharp",
+            published=now,
+            seen=True
+        ),
+        Item(
+            item_id="seen:cplusplus",
+            source_type="youtube", 
+            source_url="https://youtube.com/channel/cpp",
+            title="C++ Programming Guide",
+            link="https://youtube.com/watch?v=cpp",
+            published=datetime(2023, 12, 21, 15, 0, 0, tzinfo=timezone.utc),
+            seen=True
+        ),
+        Item(
+            item_id="unseen:cpp_project",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/cpp_project",
+            title="C++ Project Setup Tutorial",
+            link="https://youtube.com/watch?v=cpp_project",
+            published=datetime(2023, 12, 22, 15, 0, 0, tzinfo=timezone.utc),
+            seen=False
+        ),
+        Item(
+            item_id="unseen:gplus_project",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/gplus",
+            title="g++ Build System Guide",
+            link="https://youtube.com/watch?v=gplus",
+            published=datetime(2023, 12, 23, 15, 0, 0, tzinfo=timezone.utc),
+            seen=False
+        ),
+        Item(
+            item_id="unseen:java_project",
+            source_type="youtube",
+            source_url="https://youtube.com/channel/java",
+            title="Java Programming Basics",
+            link="https://youtube.com/watch?v=java",
+            published=datetime(2023, 12, 24, 15, 0, 0, tzinfo=timezone.utc),
+            seen=False
+        ),
+    ]
+    
+    # Create request
+    req = RecommendRequest(items=items, limit=20)
+    
+    # Get recommendation
+    result = recommender.recommend(req)
+    
+    # Verify top_keywords field exists and contains expected tokens with + signs
+    assert "top_keywords" in result.meta
+    top_keywords = result.meta["top_keywords"]
+    
+    # Expected keywords with weights from seen items:
+    # "c#": 1, "programming": 1, "tutorial": 1 (from "C# Programming Tutorial")
+    # "c++": 1, "programming": 1, "guide": 1 (from "C++ Programming Guide")
+    
+    # Verify c++ and c# are recognized as single tokens
+    keyword_dict = dict(top_keywords)
+    assert "c++" in keyword_dict
+    assert "c#" in keyword_dict
+    assert keyword_dict["c++"] == 1
+    assert keyword_dict["c#"] == 1
+    
+    # Verify recommendation results
+    # Items with c++ should be ranked higher due to matching keywords
+    recommended_ids = [item.item_id for item in result.items]
+    
+    # Both c++ and g++ items should be recommended before java item
+    assert "unseen:cpp_project" in recommended_ids
+    assert "unseen:gplus_project" in recommended_ids
+    
+    # Check that c++ item appears before java item (which has no matching keywords)
+    cpp_index = recommended_ids.index("unseen:cpp_project")
+    java_index = recommended_ids.index("unseen:java_project")
+    assert cpp_index < java_index
+    
+    # Check that g++ item also appears before java item
+    gplus_index = recommended_ids.index("unseen:gplus_project")
+    assert gplus_index < java_index
+
+
 def test_keyword_from_seen_recommender_top_keywords_meta() -> None:
     """Test that KeywordFromSeenRecommender includes top_keywords in meta."""
     from tech_tracker.app.recommend import KeywordFromSeenRecommender

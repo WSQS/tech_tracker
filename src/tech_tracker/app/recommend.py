@@ -158,8 +158,8 @@ class KeywordFromSeenRecommender:
         
         # Helper function to tokenize title (same as in pure function)
         def tokenize_title(title: str) -> List[str]:
-            """Split title into tokens by non-alphanumeric characters."""
-            tokens = re.split(r'[^a-zA-Z0-9]', title)
+            """Split title into tokens by non-alphanumeric characters except + and #."""
+            tokens = re.split(r'[^a-zA-Z0-9+#]', title)
             return [token.lower() for token in tokens if token]
         
         # Extract keywords from seen items
@@ -187,8 +187,8 @@ class KeywordFromSeenRecommender:
         
         # Helper function to tokenize title (same as in pure function)
         def tokenize_title(title: str) -> List[str]:
-            """Split title into tokens by non-alphanumeric characters."""
-            tokens = re.split(r'[^a-zA-Z0-9]', title)
+            """Split title into tokens by non-alphanumeric characters except + and #."""
+            tokens = re.split(r'[^a-zA-Z0-9+#]', title)
             return [token.lower() for token in tokens if token]
         
         # If no seen items, return empty list
