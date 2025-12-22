@@ -233,14 +233,27 @@ def render_recommendation_markdown(result: RecommendResult) -> str:
     
     lines = []
     
-    # 1) Meta information (strategy and limit only)
+    # 1) Meta information (strategy, limit, and top_keywords for keyword_from_seen)
     if result.meta:
         if "strategy" in result.meta:
             lines.append(f"_Strategy_: {result.meta['strategy']}")
         if "limit" in result.meta:
             lines.append(f"_Limit_: {result.meta['limit']}")
+        
+        # Add top_keywords for keyword_from_seen strategy
+        if (result.meta.get("strategy") == "keyword_from_seen" and 
+            "top_keywords" in result.meta):
+            top_keywords = result.meta["top_keywords"]
+            if top_keywords:
+                # Format: keyword(weight), keyword(weight), ...
+                keyword_strs = [f"{keyword}({weight})" for keyword, weight in top_keywords]
+                lines.append(f"_Top keywords_: {', '.join(keyword_strs)}")
+            else:
+                lines.append("_Top keywords_: (none)")
+        
         # Add empty line after meta if any meta was rendered
-        if "strategy" in result.meta or "limit" in result.meta:
+        if ("strategy" in result.meta or "limit" in result.meta or 
+            (result.meta.get("strategy") == "keyword_from_seen" and "top_keywords" in result.meta)):
             lines.append("")
     
     # 2) Items sections

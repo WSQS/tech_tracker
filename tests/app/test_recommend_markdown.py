@@ -177,3 +177,165 @@ def test_render_partial_meta() -> None:
 """
     
     assert markdown_limit == expected_limit
+
+
+def test_render_with_top_keywords_non_empty() -> None:
+    """Test rendering with non-empty top_keywords for keyword_from_seen strategy."""
+    # Create test item
+    published_time = datetime(2023, 12, 20, 10, 30, 45, tzinfo=timezone.utc)
+    item = Item(
+        item_id="test123",
+        source_type="youtube",
+        source_url="https://youtube.com/channel/testchannel",
+        title="Test Video",
+        link="https://youtube.com/watch?v=test123",
+        published=published_time,
+    )
+    
+    # Create result with keyword_from_seen strategy and top_keywords
+    result = RecommendResult(
+        items=[item],
+        meta={
+            "strategy": "keyword_from_seen",
+            "limit": 5,
+            "top_keywords": [("python", 3), ("async", 1), ("tutorial", 2)]
+        }
+    )
+    
+    markdown = render_recommendation_markdown(result)
+    
+    expected = """_Strategy_: keyword_from_seen
+_Limit_: 5
+_Top keywords_: python(3), async(1), tutorial(2)
+
+## 1. Test Video
+- ID: `test123`
+- Source: youtube
+- Channel: https://youtube.com/channel/testchannel
+- Published: 2023-12-20T10:30:45Z
+- Link: https://youtube.com/watch?v=test123
+
+"""
+    
+    assert markdown == expected
+
+
+def test_render_with_top_keywords_empty() -> None:
+    """Test rendering with empty top_keywords for keyword_from_seen strategy."""
+    # Create test item
+    published_time = datetime(2023, 12, 20, 10, 30, 45, tzinfo=timezone.utc)
+    item = Item(
+        item_id="test123",
+        source_type="youtube",
+        source_url="https://youtube.com/channel/testchannel",
+        title="Test Video",
+        link="https://youtube.com/watch?v=test123",
+        published=published_time,
+    )
+    
+    # Create result with keyword_from_seen strategy and empty top_keywords
+    result = RecommendResult(
+        items=[item],
+        meta={
+            "strategy": "keyword_from_seen",
+            "limit": 5,
+            "top_keywords": []
+        }
+    )
+    
+    markdown = render_recommendation_markdown(result)
+    
+    expected = """_Strategy_: keyword_from_seen
+_Limit_: 5
+_Top keywords_: (none)
+
+## 1. Test Video
+- ID: `test123`
+- Source: youtube
+- Channel: https://youtube.com/channel/testchannel
+- Published: 2023-12-20T10:30:45Z
+- Link: https://youtube.com/watch?v=test123
+
+"""
+    
+    assert markdown == expected
+
+
+def test_render_latest_strategy_without_top_keywords() -> None:
+    """Test that latest strategy does not show top_keywords even if present."""
+    # Create test item
+    published_time = datetime(2023, 12, 20, 10, 30, 45, tzinfo=timezone.utc)
+    item = Item(
+        item_id="test123",
+        source_type="youtube",
+        source_url="https://youtube.com/channel/testchannel",
+        title="Test Video",
+        link="https://youtube.com/watch?v=test123",
+        published=published_time,
+    )
+    
+    # Create result with latest strategy (should not show top_keywords even if present)
+    result = RecommendResult(
+        items=[item],
+        meta={
+            "strategy": "latest",
+            "limit": 5,
+            "top_keywords": [("python", 3), ("async", 1)]  # Should be ignored
+        }
+    )
+    
+    markdown = render_recommendation_markdown(result)
+    
+    expected = """_Strategy_: latest
+_Limit_: 5
+
+## 1. Test Video
+- ID: `test123`
+- Source: youtube
+- Channel: https://youtube.com/channel/testchannel
+- Published: 2023-12-20T10:30:45Z
+- Link: https://youtube.com/watch?v=test123
+
+"""
+    
+    assert markdown == expected
+
+
+def test_render_keyword_from_seen_without_top_keywords_field() -> None:
+    """Test keyword_from_seen strategy without top_keywords field."""
+    # Create test item
+    published_time = datetime(2023, 12, 20, 10, 30, 45, tzinfo=timezone.utc)
+    item = Item(
+        item_id="test123",
+        source_type="youtube",
+        source_url="https://youtube.com/channel/testchannel",
+        title="Test Video",
+        link="https://youtube.com/watch?v=test123",
+        published=published_time,
+    )
+    
+    # Create result with keyword_from_seen strategy but no top_keywords field
+    result = RecommendResult(
+        items=[item],
+        meta={
+            "strategy": "keyword_from_seen",
+            "limit": 5
+            # No top_keywords field
+        }
+    )
+    
+    markdown = render_recommendation_markdown(result)
+    
+    expected = """_Strategy_: keyword_from_seen
+_Limit_: 5
+
+## 1. Test Video
+- ID: `test123`
+- Source: youtube
+- Channel: https://youtube.com/channel/testchannel
+- Published: 2023-12-20T10:30:45Z
+- Link: https://youtube.com/watch?v=test123
+
+"""
+    
+    assert markdown == expected
