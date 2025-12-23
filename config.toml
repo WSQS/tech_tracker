@@ -37,3 +37,18 @@ title = "CppNow"
 type = "youtube"
 url = "https://www.youtube.com/channel/UC1kBxkk2bcG78YBX7LMl9pQ"
 title = "code_report"
+
+[[sources]]
+type = "youtube"
+url = "https://www.youtube.com/channel/UCkgKbO073CuS1ZZFKoOgTVw"
+title = "Eyesomorphic"
+
+[[sources]]
+type = "youtube"
+url = "https://www.youtube.com/channel/UCNi5dKk8OwjJrj8nWPf8aIg"
+title = "Let's Chat with Stephen"
+
+[[sources]]
+type = "youtube"
+url = "https://www.youtube.com/channel/UCQ-W1KE9EYfdxhL6S4twUNw"
+title = "The Cherno"
