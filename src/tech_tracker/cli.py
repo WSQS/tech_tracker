@@ -266,6 +266,98 @@ def handle_modify_command(args: argparse.Namespace) -> int:
         return 1
 
 
+def handle_import_command(args: argparse.Namespace) -> int:
+    """Handle the 'import' subcommand.
+    
+    Args:
+        args: Parsed command-line arguments.
+        
+    Returns:
+        Exit code (0 for success, non-zero for error).
+    """
+    try:
+        # Import required modules
+        from tech_tracker.item import Item
+        from tech_tracker.item_store import JsonItemStore
+        from pathlib import Path
+        
+        # Determine store path (default if not provided)
+        if args.store is None:
+            store_path = default_store_path()
+        else:
+            store_path = args.store
+        
+        # Load input JSON file
+        input_path = Path(args.input)
+        if not input_path.exists():
+            print(f"Error: Input file not found: {input_path}", file=sys.stderr)
+            return 1
+        
+        try:
+            with input_path.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+        except json.JSONDecodeError as e:
+            print(f"Error: Invalid JSON in input file: {e}", file=sys.stderr)
+            return 1
+        
+        # Parse input data into items list
+        items_to_import = []
+        
+        if isinstance(data, dict) and "items" in data and isinstance(data["items"], list):
+            # Format: {"items": [ ... ]}
+            items_data = data["items"]
+        elif isinstance(data, dict):
+            # Format: single item dict
+            items_data = [data]
+        elif isinstance(data, list):
+            # Format: list of item dicts
+            items_data = data
+        else:
+            print(f"Error: Invalid input format. Expected dict or list.", file=sys.stderr)
+            return 1
+        
+        # Convert dicts to Item objects
+        for item_data in items_data:
+            if not isinstance(item_data, dict):
+                print(f"Error: Invalid item format. Expected dict.", file=sys.stderr)
+                return 1
+            try:
+                item = Item.from_dict(item_data)
+                items_to_import.append(item)
+            except (KeyError, ValueError, TypeError) as e:
+                print(f"Error: Invalid item data: {e}", file=sys.stderr)
+                return 1
+        
+        if not items_to_import:
+            print("No items to import.")
+            return 0
+        
+        # Load existing items from store
+        store = JsonItemStore(store_path)
+        existing_items = store.load_all()
+        existing_item_ids = {item.item_id for item in existing_items}
+        
+        # Filter out items that already exist
+        new_items = [item for item in items_to_import if item.item_id not in existing_item_ids]
+        ignored_count = len(items_to_import) - len(new_items)
+        
+        if not new_items:
+            print(f"No new items imported. {ignored_count} item(s) already exist.")
+            return 0
+        
+        # Save new items to store
+        store.save_many(new_items)
+        
+        # Output result
+        print(f"Imported {len(new_items)} new item(s). {ignored_count} item(s) already exist.")
+        
+        return 0
+        
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     """Main CLI entry point.
     
@@ -303,6 +395,22 @@ def main(argv: list[str] | None = None) -> int:
     recommend_parser = subparsers.add_parser(
         "recommend",
         help="Generate recommendations from stored items and save as Markdown"
+    )
+    
+    # Import subcommand
+    import_parser = subparsers.add_parser(
+        "import",
+        help="Import items from a JSON file"
+    )
+    import_parser.add_argument(
+        "input",
+        help="Path to input JSON file"
+    )
+    import_parser.add_argument(
+        "--store",
+        type=str,
+        required=False,
+        help="Path to item store JSON file (default: ~/.tech-tracker/items.json)"
     )
     
     # Modify subcommand
@@ -344,6 +452,8 @@ def main(argv: list[str] | None = None) -> int:
     # Handle commands
     if args.command == "fetch":
         return handle_fetch_command(args)
+    elif args.command == "import":
+        return handle_import_command(args)
     elif args.command == "recommend":
         return handle_recommend_command(args)
     elif args.command == "modify":
