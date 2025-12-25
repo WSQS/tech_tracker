@@ -11,7 +11,7 @@ def main():
     parser.add_argument(
         "input", type=Path, help="Input jsonl file (e.g., videos.jsonl)"
     )
-    parser.add_argument("Output", type=Path, help="Output json file (e.g., items.json)")
+    parser.add_argument("output", type=Path, help="Output json file (e.g., items.json)")
     args = parser.parse_args()
     items = []
     with args.input.open("r", encoding="utf-8") as f:
@@ -36,7 +36,9 @@ def main():
                 "seen": False,
             }
             items.append(item)
-    print(items)
+    with args.output.open("w", encoding="utf-8") as f:
+        json.dump({"items": items}, f, ensure_ascii=False, indent=2)
+    print(f"Written {len(items)} items to {args.output}")
 
 
 if __name__ == "__main__":
