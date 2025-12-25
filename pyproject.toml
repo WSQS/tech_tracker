@@ -27,6 +27,7 @@ Repository = "https://github.com/yourusername/tech-tracker"
 
 [project.scripts]
 tech-tracker = "tech_tracker.cli:main"
+yt-dlp-wrapper = "yt_dlp_wrapper.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
